@@ -130,17 +130,22 @@ departures for each. Each row can be saved to My Routes.
  B  → North Hollywood    4:15 4:27   ☆
  D  → Union Station      4:14 4:26   ★
  720 → Downtown LA       4:11 4:19   ☆
- ─────────────────────────────────────
- NEARBY
+ 720 → Santa Monica      4:13 4:21   ☆
  754 → Hollywood         4:13 4:28   ☆
 ```
 
 - Tapping a row opens the full day's departures for that line, direction and
   stop, paged.
-- *Author's call:* schedule data lists each platform and each street corner as
-  its own stop. The stop view merges platforms of one station, and lists lines
-  at other stops within about 150 m under "Nearby", because the transfer
-  question is about the place, not the pole.
+- *Author's call — places, not poles:* schedule data lists each platform and
+  each street corner as its own stop. The app works in **places**: a station's
+  platforms plus every stop within about 100 m of it or of each other (so all
+  corners of one intersection, and the rail station under it, are one place).
+  The stop view lists every line and direction at the place in one list; there
+  is no separate "nearby" section. Near me and Search list places, one entry
+  each. The converter computes places and stores them in the pack; the
+  distance is a per-agency config value, tuned against real LA intersections.
+- A saved route still records the exact stop it boards at, so its times are
+  for that pole or platform.
 
 **Near me.** On tap, gets one location fix and lists the closest stops with
 distance. Location permission is requested the first time this is tapped, not
@@ -185,9 +190,14 @@ was built, and an "Update schedule" action.
 - "Update schedule" fetches a small index file, compares it to the installed
   pack, and downloads a newer pack if there is one. It never runs on its own.
 - *Author's call:* packs and the index are plain static files at a base
-  address set in one place in the app, so hosting can move. Starting host:
-  release files on the project's code-hosting page, rebuilt by a scheduled
-  job. Where the project is hosted is not decided yet.
+  address set in one place in the app, so hosting can move.
+- **In project 1:** the app-side fetch, compare and download, and the
+  converter writing the pack plus its index entry. Both are tested end to end
+  against a local address.
+- **Depends on the owner's hosting answer (see Open):** a scheduled job that
+  rebuilds the pack weekly and publishes it. If hosting is settled before the
+  build, the job is part of project 1; if not, it is added when it is, and
+  until then the bundled pack is refreshed by installing a new build.
 
 ## The data pack
 
@@ -241,12 +251,16 @@ agency is a new config.
 
 - Converter: automated tests against a small hand-made schedule covering
   after-midnight trips, holiday exceptions, short-turn trips and merged
-  stations; plus a run against the real LA Metro files with spot checks
+  stations and intersections (places); plus a run against the real LA Metro files with spot checks
   against Metro's published timetables for the D Line and line 720.
 - App: automated tests for "next departures" across the service-day boundary,
   the end of service, and an expired pack.
-- On the device: every screen checked on the Kompakt itself for legibility,
-  ghosting, and tap accuracy.
+- On the device: the owner has the only Kompakt, connected by USB to the
+  machine the build runs on. Builds are installed over ADB and layout is
+  checked from device screenshots; legibility, ghosting, tap accuracy and
+  location-fix time need the owner's eyes, so the plan has owner checkpoints
+  on the device early (first screen) and not only at the end. An 800×480
+  emulator is used in between.
 
 ## Open, for the owner
 
