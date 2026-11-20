@@ -1,0 +1,5 @@
+stop_id,stop_code,stop_name,stop_lat,stop_lon,location_type,parent_station
+101,101,Alpha / Main,  34.00030,-118.30000,,
+102,102,Alpha / Main,  34.00035,-118.30040,,
+201,201,Beta / Main,  34.00030,-118.29000,,
+301,301,Far / Out,  34.02000,-118.25000,,

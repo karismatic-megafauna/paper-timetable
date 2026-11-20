@@ -1,0 +1,8 @@
+stop_id,stop_code,stop_name,stop_lat,stop_lon,location_type,parent_station
+ALPHA,ALPHA,Alpha Station,34.00000,-118.30000,0,ALPHA_S
+ALPHA_S,ALPHA_S,Alpha Station,34.00000,-118.30000,1,
+BETA,BETA,Beta Station,34.00000,-118.29000,0,BETA_S
+BETA_S,BETA_S,Beta Station,34.00000,-118.29000,1,
+GAMMA,GAMMA,Gamma Station,34.00000,-118.28000,0,GAMMA_S
+GAMMA_S,GAMMA_S,Gamma Station,34.00000,-118.28000,1,
+ALPHA_E,ALPHA_E,Alpha Station - Main Entrance,34.00010,-118.30010,2,ALPHA_S

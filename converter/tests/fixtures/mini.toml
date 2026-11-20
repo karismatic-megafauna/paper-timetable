@@ -1,0 +1,12 @@
+id = "mini"
+name = "Mini Transit"
+rail_short_name_regex = "^Metro (\\w+) Line$"
+headsign_strip_regex = "^.+? - "
+
+[[feeds]]
+prefix = "rail"
+source = "mini/rail"
+
+[[feeds]]
+prefix = "bus"
+source = "mini/bus"

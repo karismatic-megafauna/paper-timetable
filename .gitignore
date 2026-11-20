@@ -1,0 +1,14 @@
+.superpowers/
+.worktrees/
+converter/dist/
+converter/.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.gradle/
+build/
+local.properties
+app/src/main/assets/*.pack
+.DS_Store
+.idea/
+*.iml

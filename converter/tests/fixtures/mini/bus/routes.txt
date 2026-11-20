@@ -1,0 +1,4 @@
+route_id,route_short_name,route_long_name,route_desc,route_type
+720-9,720,Mini Rapid Line,ALPHA - FAR OUT VIA MAIN ST,3
+617-9,617,Mini Local Line,FAR OUT - BETA,3
+99-9,99,Mini Local Line,ALPHA LOOP,3
