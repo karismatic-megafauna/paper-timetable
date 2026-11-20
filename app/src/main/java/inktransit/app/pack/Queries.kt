@@ -123,3 +123,80 @@ fun PackDb.placeBoard(placeId: Int, from: LocalDateTime, perRow: Int): List<Boar
     }
     return keys.map { BoardRow(it.route, it.dir, it.headsign, it.stopId, it.stopName, nextDepartures(it.stopId, it.route.id, it.dir, from, perRow)) }
 }
+
+data class DirectionRow(val routeId: Int, val dir: Int, val headsign: String)
+
+data class PlaceRow(val id: Int, val name: String, val lat: Double, val lon: Double)
+
+/** [band] indexes FrequencyWords.BAND_NAMES. [headwayMin] is null when the band has fewer than two trips. */
+data class FreqRow(val dir: Int, val band: Int, val trips: Int, val headwayMin: Int?)
+
+/** First and last departure of a direction, in seconds after the service day's start. */
+data class SpanRow(val dir: Int, val first: Int, val last: Int)
+
+/** 0 Monday–Friday, 1 Saturday, 2 Sunday. */
+fun dayTypeOf(day: Int): Int = when (inktransit.app.time.dateOf(day).dayOfWeek.value) {
+    6 -> 1
+    7 -> 2
+    else -> 0
+}
+
+fun PackDb.directions(routeId: Int): List<DirectionRow> =
+    sql.rawQuery("SELECT dir, headsign FROM direction WHERE route_id = ? ORDER BY dir", arrayOf("$routeId")).use { c ->
+        buildList { while (c.moveToNext()) add(DirectionRow(routeId, c.getInt(0), c.getString(1))) }
+    }
+
+fun PackDb.directionStops(routeId: Int, dir: Int): List<StopRow> =
+    sql.rawQuery(
+        """SELECT s.id, s.key, s.place_id, s.name FROM direction_stop ds JOIN stop s ON s.id = ds.stop_id
+           WHERE ds.route_id = ? AND ds.dir = ? ORDER BY ds.seq""",
+        arrayOf("$routeId", "$dir"),
+    ).use { c -> buildList { while (c.moveToNext()) add(StopRow(c.getInt(0), c.getString(1), c.getInt(2), c.getString(3))) } }
+
+fun PackDb.frequency(routeId: Int, dayType: Int): List<FreqRow> =
+    sql.rawQuery(
+        "SELECT dir, band, trips, headway_min FROM frequency WHERE route_id = ? AND day_type = ? ORDER BY dir, band",
+        arrayOf("$routeId", "$dayType"),
+    ).use { c -> buildList { while (c.moveToNext()) add(FreqRow(c.getInt(0), c.getInt(1), c.getInt(2), if (c.isNull(3)) null else c.getInt(3))) } }
+
+fun PackDb.spans(routeId: Int, dayType: Int): List<SpanRow> =
+    sql.rawQuery(
+        "SELECT dir, first, last FROM span WHERE route_id = ? AND day_type = ? ORDER BY dir",
+        arrayOf("$routeId", "$dayType"),
+    ).use { c -> buildList { while (c.moveToNext()) add(SpanRow(c.getInt(0), c.getInt(1), c.getInt(2))) } }
+
+/** Route id -> frequency phrase, for the whole lines list in one query. */
+fun PackDb.allFrequencyTags(dayType: Int): Map<Int, String> {
+    val rows = HashMap<Int, MutableList<FreqRow>>()
+    sql.rawQuery("SELECT route_id, dir, band, trips, headway_min FROM frequency WHERE day_type = ?", arrayOf("$dayType")).use { c ->
+        while (c.moveToNext()) {
+            rows.getOrPut(c.getInt(0)) { ArrayList() }.add(FreqRow(c.getInt(1), c.getInt(2), c.getInt(3), if (c.isNull(4)) null else c.getInt(4)))
+        }
+    }
+    return rows.mapValues { inktransit.app.text.FrequencyWords.tag(it.value) }
+}
+
+fun PackDb.place(id: Int): PlaceRow =
+    sql.rawQuery("SELECT id, name, lat, lon FROM place WHERE id = ?", arrayOf("$id")).use {
+        check(it.moveToFirst()) { "no place $id" }
+        PlaceRow(it.getInt(0), it.getString(1), it.getDouble(2), it.getDouble(3))
+    }
+
+private fun searchable(text: String): String = text.lowercase().replace(Regex("[^a-z0-9]+"), " ").trim()
+
+/**
+ * Places whose name contains every word typed, in any order ("vermont wilshire"
+ * finds "Wilshire / Vermont Station"). Names starting with the first word come first.
+ */
+fun PackDb.searchPlaces(q: String, limit: Int): List<PlaceRow> {
+    val words = searchable(q).split(" ").filter { it.isNotEmpty() }
+    if (words.isEmpty()) return emptyList()
+    val hits = ArrayList<Pair<PlaceRow, String>>()
+    sql.rawQuery("SELECT id, name, lat, lon FROM place", null).use { c ->
+        while (c.moveToNext()) {
+            val name = searchable(c.getString(1))
+            if (words.all { name.contains(it) }) hits.add(PlaceRow(c.getInt(0), c.getString(1), c.getDouble(2), c.getDouble(3)) to name)
+        }
+    }
+    return hits.sortedWith(compareBy({ !it.second.startsWith(words[0]) }, { it.first.name })).take(limit).map { it.first }
+}
