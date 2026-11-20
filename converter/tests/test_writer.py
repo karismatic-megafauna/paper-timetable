@@ -104,9 +104,20 @@ def test_build_is_reproducible(out, tmp_path):
         assert (tmp_path / name).read_bytes() == (out / name).read_bytes(), name
 
 
+def _contents(path):
+    """Schema and every row. The file's bytes differ between SQLite versions; what it holds must not."""
+    con = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+    try:
+        schema = con.execute("SELECT type, name, sql FROM sqlite_master ORDER BY name").fetchall()
+        tables = [name for kind, name, _ in schema if kind == "table"]
+        return schema, {t: sorted(con.execute(f"SELECT * FROM {t}").fetchall(), key=repr) for t in tables}
+    finally:
+        con.close()
+
+
 def test_checked_in_fixture_is_current(out):
     checked_in = REPO / "app" / "src" / "test" / "resources" / "mini.pack"
-    assert checked_in.read_bytes() == (out / "mini.pack").read_bytes(), \
+    assert _contents(checked_in) == _contents(out / "mini.pack"), \
         "rebuild it: see docs/superpowers/plans, Task 6 step 5"
 
 
