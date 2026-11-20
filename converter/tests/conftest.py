@@ -18,3 +18,21 @@ def rail():
 @pytest.fixture(scope="session")
 def bus():
     return load_feed(MINI / "bus", "bus")
+
+
+@pytest.fixture(scope="session")
+def cfg():
+    from packbuilder.config import load_config
+    return load_config(MINI_TOML)
+
+
+@pytest.fixture(scope="session")
+def sd(rail, bus):
+    from packbuilder.services import expand
+    return expand([rail, bus])
+
+
+@pytest.fixture(scope="session")
+def lines(rail, bus, cfg):
+    from packbuilder.patterns import build
+    return build([rail, bus], cfg)
