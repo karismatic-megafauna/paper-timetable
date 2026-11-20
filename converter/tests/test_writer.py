@@ -1,0 +1,109 @@
+import gzip
+import hashlib
+import json
+import sqlite3
+
+import pytest
+
+from packbuilder.cli import main
+
+from conftest import MINI_TOML, REPO
+
+BUILT = "2026-11-02T00:00:00Z"
+
+
+@pytest.fixture(scope="module")
+def out(tmp_path_factory):
+    d = tmp_path_factory.mktemp("out")
+    assert main(["build", "--config", str(MINI_TOML), "--out", str(d), "--built-at", BUILT]) == 0
+    return d
+
+
+@pytest.fixture(scope="module")
+def pack(out):
+    con = sqlite3.connect(out / "mini.pack")
+    yield con
+    con.close()
+
+
+def varint_count(blob):
+    return sum(1 for b in blob if not b & 0x80)
+
+
+def test_meta(pack):
+    m = dict(pack.execute("select key, value from meta"))
+    assert m["format_version"] == "1" and m["timezone"] == "America/Los_Angeles"
+    assert m["agency_id"] == "mini" and m["agency_name"] == "Mini Transit"
+    assert (m["valid_from"], m["valid_to"], m["first_day"], m["last_day"]) == ("20261102", "20261115", "20261102", "20261213")
+    assert m["built_at"] == BUILT and m["realtime_url"] == ""
+
+
+def test_counts(pack):
+    count = lambda t: pack.execute(f"select count(*) from {t}").fetchone()[0]  # noqa: E731
+    assert (count("route"), count("stop"), count("place")) == (4, 7, 4)
+
+
+def test_alpha_place_has_three_stops(pack):
+    keys = [k for (k,) in pack.execute(
+        "select s.key from stop s join place p on p.id = s.place_id where p.name = 'Alpha Station' order by s.key")]
+    assert keys == ["bus:101", "bus:102", "rail:ALPHA"]
+
+
+def test_route_keys_and_order(pack):
+    assert [k for (k,) in pack.execute("select key from route order by sort")] == ["D", "99", "617", "720"]
+
+
+def test_direction_stops_are_zero_based_and_ordered(pack):
+    rows = pack.execute("""select ds.seq, s.key from direction_stop ds join stop s on s.id = ds.stop_id
+                           join route r on r.id = ds.route_id where r.key = 'D' and ds.dir = 0 order by ds.seq""").fetchall()
+    assert rows == [(0, "rail:ALPHA"), (1, "rail:BETA"), (2, "rail:GAMMA")]
+
+
+def test_trip_blob_matches_pattern_length(pack):
+    rows = pack.execute("select t.deltas, p.stop_count from trip t join pattern p on p.id = t.pattern_id").fetchall()
+    assert rows and all(varint_count(blob) == n - 1 for blob, n in rows)
+
+
+def test_pattern_stop_rows_match_stop_count(pack):
+    assert pack.execute("""select count(*) from pattern p where p.stop_count !=
+                           (select count(*) from pattern_stop ps where ps.pattern_id = p.id)""").fetchone()[0] == 0
+
+
+def test_service_days_cover_the_range(pack):
+    assert pack.execute("select count(distinct day) from service_day").fetchone()[0] == 42
+
+
+def test_frequency_and_span_rows(pack):
+    assert pack.execute("""select f.trips, f.headway_min from frequency f join route r on r.id = f.route_id
+                           where r.key = 'D' and f.dir = 0 and f.day_type = 0 and f.band = 2""").fetchone() == (36, 10)
+    assert pack.execute("""select s.first, s.last from span s join route r on r.id = s.route_id
+                           where r.key = 'D' and s.dir = 0 and s.day_type = 0""").fetchone() == (18000, 90600)
+
+
+def test_no_wal_or_tmp_left(out):
+    assert sorted(p.name for p in out.iterdir()) == ["index.json", "mini.pack", "mini.pack.gz"]
+
+
+def test_index_matches_pack(out):
+    index = json.loads((out / "index.json").read_text())
+    assert index["format"] == 1 and len(index["packs"]) == 1
+    e = index["packs"][0]
+    assert e["agency_id"] == "mini" and e["name"] == "Mini Transit" and e["format_version"] == 1
+    assert e["url"] == "mini.pack.gz" and e["built_at"] == BUILT
+    assert (e["valid_from"], e["valid_to"]) == (20261102, 20261115)
+    assert e["size"] == (out / "mini.pack.gz").stat().st_size
+    raw = (out / "mini.pack").read_bytes()
+    assert e["sha256"] == hashlib.sha256(raw).hexdigest()
+    assert gzip.decompress((out / "mini.pack.gz").read_bytes()) == raw
+
+
+def test_build_is_reproducible(out, tmp_path):
+    assert main(["build", "--config", str(MINI_TOML), "--out", str(tmp_path), "--built-at", BUILT]) == 0
+    for name in ("mini.pack", "mini.pack.gz", "index.json"):
+        assert (tmp_path / name).read_bytes() == (out / name).read_bytes(), name
+
+
+def test_checked_in_fixture_is_current(out):
+    checked_in = REPO / "app" / "src" / "test" / "resources" / "mini.pack"
+    assert checked_in.read_bytes() == (out / "mini.pack").read_bytes(), \
+        "rebuild it: see docs/superpowers/plans, Task 6 step 5"
