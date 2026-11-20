@@ -36,3 +36,11 @@ def sd(rail, bus):
 def lines(rail, bus, cfg):
     from packbuilder.patterns import build
     return build([rail, bus], cfg)
+
+
+@pytest.fixture(scope="session")
+def places(rail, bus, lines, cfg):
+    from packbuilder.places import build_places
+    stops = list(rail.stops.values()) + list(bus.stops.values())
+    used = {s for p in lines.patterns for s in p.stop_ids}
+    return build_places(stops, used, cfg.place_radius_m, cfg.place_max_span_m)
