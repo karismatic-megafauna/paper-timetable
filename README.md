@@ -75,8 +75,15 @@ cd converter && uv run packbuilder build --config agencies/lametro.toml --out di
 
 ## Schedule updates
 
-`.github/workflows/packs.yml` rebuilds the pack every Monday and uploads
-`lametro.pack.gz` and `index.json` to a release called `packs`. The app looks
+`.github/workflows/packs.yml` rebuilds the pack every Monday and uploads it,
+named with its build time (`lametro-20261123T110000Z.pack.gz`), and then
+`index.json`, to a release called `packs`. The index is replaced last and is
+what makes a new pack live.
+
+GitHub disables scheduled workflows after 60 days without repository
+activity. The job re-enables itself on every run to avoid that; this has not
+been observed over a full 60 days yet, so check the Actions tab now and then.
+If it has stopped, run it by hand from there. The app looks
 for them at the address in `gradle.properties`:
 
 ```

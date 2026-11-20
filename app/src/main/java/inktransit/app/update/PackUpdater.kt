@@ -59,15 +59,20 @@ class PackUpdater(
         val installed = store.current().meta
         val text = open(URL(baseUrl + "index.json")).use { it.readBytes().toString(Charsets.UTF_8) }
         val packs = JSONObject(text).getJSONArray("packs")
+        var onlyUnreadable = false
         for (i in 0 until packs.length()) {
             val entry = packs.getJSONObject(i)
             if (entry.getString("agency_id") != installed.agencyId) continue
             val builtAt = Instant.parse(entry.getString("built_at"))
-            if (!builtAt.isAfter(installed.builtAt)) return Lookup.Nothing
-            if (entry.getInt("format_version").toString() != PackDb.FORMAT) return Lookup.NeedsNewerApp
+            if (!builtAt.isAfter(installed.builtAt)) continue
+            // A later index may list packs in a newer format beside one this app can still read.
+            if (entry.getInt("format_version").toString() != PackDb.FORMAT) {
+                onlyUnreadable = true
+                continue
+            }
             return Lookup.Newer(UpdateInfo(URL(baseUrl + entry.getString("url")), entry.getLong("size"), entry.getString("sha256"), builtAt, entry.getInt("valid_to")))
         }
-        return Lookup.Nothing
+        return if (onlyUnreadable) Lookup.NeedsNewerApp else Lookup.Nothing
     }
 
     /** [progress] receives a percentage, at most once per ten points. */

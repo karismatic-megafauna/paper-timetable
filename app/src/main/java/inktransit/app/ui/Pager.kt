@@ -15,6 +15,16 @@ import androidx.compose.ui.Modifier
 
 fun pageCount(n: Int, pageSize: Int): Int = if (n <= 0) 1 else (n + pageSize - 1) / pageSize
 
+/**
+ * How many rows of [rowDp] fit in [availableDp]. When they do not all fit, room
+ * is kept for the Prev/Next bar. Never less than one.
+ */
+fun rowsThatFit(availableDp: Float, rowDp: Float, total: Int, barDp: Float = 66f): Int {
+    val all = (availableDp / rowDp).toInt()
+    if (total <= all) return maxOf(1, all)
+    return maxOf(1, ((availableDp - barDp) / rowDp).toInt())
+}
+
 fun <T> pageOf(items: List<T>, page: Int, pageSize: Int): List<T> {
     val from = page * pageSize
     if (page < 0 || from >= items.size) return emptyList()

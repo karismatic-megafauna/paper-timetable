@@ -8,6 +8,12 @@ import inktransit.app.data.SavedRoutes
 import inktransit.app.pack.PackDb
 import inktransit.app.pack.PackStore
 import inktransit.app.time.ServiceClock
+import inktransit.app.update.UpdateResult
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
@@ -52,8 +58,41 @@ class AppState(val store: PackStore, private val saved: SavedRoutes, private val
         savedRoutes = saved.all()
     }
 
+    /** Shown on the About screen. Lives here so it survives leaving that screen mid-download. */
+    var updateStatus: String? by mutableStateOf(null)
+        private set
+    var updating: Boolean by mutableStateOf(false)
+        private set
+    private val scope = MainScope()
+
+    /**
+     * Runs a schedule update to completion whatever screen is showing. [run]
+     * does the blocking work on [io] and reports progress as a percentage.
+     */
+    fun startUpdate(io: CoroutineDispatcher = Dispatchers.IO, run: (progress: (Int) -> Unit) -> UpdateResult) {
+        if (updating) return
+        updating = true
+        updateStatus = "Checking…"
+        scope.launch {
+            val result = withContext(io) { run { percent -> updateStatus = "Downloading $percent%" } }
+            updateStatus = when (result) {
+                UpdateResult.UpToDate -> "You have the latest schedule."
+                is UpdateResult.Failed -> result.reason
+                is UpdateResult.Updated -> {
+                    packReplaced(store.current())
+                    "Schedule updated."
+                }
+            }
+            updating = false
+        }
+    }
+
+    /** Switches the screens to [newDb], then closes the pack they were using. */
     fun packReplaced(newDb: PackDb) {
+        val old = db
+        if (old === newDb) return
         db = newDb
         tick()
+        old.close()
     }
 }

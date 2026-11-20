@@ -251,3 +251,21 @@ fun formatDistance(m: Int, locale: java.util.Locale): String {
     }
     return if (m < 1000) "${maxOf(10, Math.round(m / 10.0).toInt() * 10)} m" else String.format(java.util.Locale.ROOT, "%.1f km", m / 1000.0)
 }
+
+/** True when [routeId]/[dir] has any trip that can be boarded at [stopId] (calling there, and not only to terminate). */
+fun PackDb.servesStop(stopId: Int, routeId: Int, dir: Int): Boolean =
+    sql.rawQuery(
+        """SELECT 1 FROM pattern_stop ps JOIN pattern p ON p.id = ps.pattern_id
+           WHERE ps.stop_id = ? AND p.route_id = ? AND p.dir = ? AND ps.seq < p.stop_count - 1 LIMIT 1""",
+        arrayOf("$stopId", "$routeId", "$dir"),
+    ).use { it.moveToFirst() }
+
+/**
+ * The service day a rider at [at] is in. Just after midnight that is still
+ * yesterday's, for as long as yesterday's last departures have not left: at
+ * 12:30a the trains about to go belong to the night before.
+ */
+fun PackDb.serviceDayFor(stopId: Int, routeId: Int, dir: Int, at: LocalDateTime): Int {
+    val previous = dayOf(at.toLocalDate().minusDays(1))
+    return if (dayDepartures(stopId, routeId, dir, previous).any { !it.time.isBefore(at) }) previous else dayOf(at.toLocalDate())
+}

@@ -38,14 +38,18 @@ class PackStore(private val dir: File, private val bundledStamp: String, private
     }
 
     /**
-     * Makes [candidate] the pack in use. It is opened first: if it is not a
-     * pack this app can read, the exception propagates and nothing changes.
+     * Makes [candidate] the pack in use and returns it. It is opened first: if
+     * it is not a pack this app can read, the exception propagates and nothing
+     * changes.
+     *
+     * The pack that was in use is deliberately NOT closed here. This runs on a
+     * background thread while the screens are still drawing from the old pack;
+     * its open handle keeps working after the file is replaced. Whoever was
+     * using it closes it once they have switched (see AppState.packReplaced).
      */
     @Synchronized
     fun replaceWith(candidate: File): PackDb {
         val agency = PackDb.open(candidate).use { it.meta.agencyId }
-        open?.close()
-        open = null
         val installed = install(candidate, agency)
         return PackDb.open(installed).also { open = it }
     }

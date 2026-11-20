@@ -71,6 +71,14 @@ class DeparturesTest {
         assertEquals(d.map { it.time }.sorted(), d.map { it.time })
     }
 
+    // At 12:30 on Thursday morning the trains about to leave belong to Wednesday's service.
+    @Test fun serviceDayForLateNightIsThePreviousDay() {
+        assertEquals(20261104, db.serviceDayFor(ALPHA, D, 0, at("2026-11-05T00:30")))
+        assertEquals(20261105, db.serviceDayFor(ALPHA, D, 0, at("2026-11-05T01:15"))) // last train has gone
+        assertEquals(20261104, db.serviceDayFor(ALPHA, D, 0, at("2026-11-04T16:00")))
+        assertEquals(20261107, db.serviceDayFor(S101, R720, 0, at("2026-11-07T00:30"))) // 720 does not run that late
+    }
+
     // Review Focus 5
     @Test fun noSaturdayServiceSkipsToSunday() {
         val d = next(S101, R720, 0, at("2026-11-07T10:00"), 1).single()

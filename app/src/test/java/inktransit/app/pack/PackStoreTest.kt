@@ -63,6 +63,17 @@ class PackStoreTest {
         assertEquals(Instant.parse("2026-12-01T00:00:00Z"), store().current().meta.builtAt)
     }
 
+    // The UI is still drawing from the old pack while an update swaps the new one in.
+    @Test fun theOldPackStaysReadableAfterASwap() {
+        val s = store()
+        val old = s.current()
+        val fresh = s.replaceWith(rebuilt("2026-12-01T00:00:00Z"))
+        assertEquals(4, old.routes().size)
+        assertEquals(Instant.parse("2026-11-02T00:00:00Z"), old.meta.builtAt)
+        old.close()
+        assertEquals(4, fresh.routes().size)
+    }
+
     @Test fun replaceWithAnUnreadablePackChangesNothing() {
         val s = store()
         val original = s.current().meta.builtAt

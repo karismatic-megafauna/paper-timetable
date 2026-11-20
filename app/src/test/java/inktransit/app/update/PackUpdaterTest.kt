@@ -146,6 +146,18 @@ class PackUpdaterTest {
         assertEquals(original, store.current().meta.builtAt)
     }
 
+    // A future index may list a newer-format pack beside one this app can still read.
+    @Test fun anUnsupportedEntryIsSkippedWhenAUsableOneFollows() {
+        val raw = pack(newer)
+        publish(raw, newer)
+        val index = JSONObject(String(served["index.json"]!!))
+        val usable = index.getJSONArray("packs").getJSONObject(0)
+        val future = JSONObject(usable.toString()).put("format_version", 2).put("url", "mini-v2.pack.gz")
+        served["index.json"] = JSONObject().put("format", 1).put("packs", JSONArray().put(future).put(usable)).toString().toByteArray()
+        assertTrue(updater().update {} is UpdateResult.Updated)
+        assertEquals(newer, store.current().meta.builtAt)
+    }
+
     @Test fun noConnection() {
         val offline = PackUpdater("https://example.invalid/packs/", store, workDir) { throw UnknownHostException("example.invalid") }
         assertEquals(UpdateResult.Failed("No connection."), offline.update {})

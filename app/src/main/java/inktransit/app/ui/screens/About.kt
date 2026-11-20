@@ -5,11 +5,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -21,10 +16,6 @@ import inktransit.app.ui.InkButton
 import inktransit.app.ui.InkText
 import inktransit.app.ui.ScreenFrame
 import inktransit.app.update.PackUpdater
-import inktransit.app.update.UpdateResult
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.io.File
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -35,10 +26,9 @@ private val SHORT_DATE = DateTimeFormatter.ofPattern("MMM d", Locale.US)
 @Composable
 fun AboutScreen(app: AppState) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     val meta = app.db.meta
-    var status by remember { mutableStateOf<String?>(null) }
-    var busy by remember { mutableStateOf(false) }
+    val status = app.updateStatus
+    val busy = app.updating
     ScreenFrame("ABOUT") {
         Column(Modifier.weight(1f).fillMaxWidth().padding(Ink.Gutter, 12.dp)) {
             InkText(meta.agencyName, Ink.Title)
@@ -56,19 +46,9 @@ fun AboutScreen(app: AppState) {
             InkText("Updates not set up in this build", Ink.Small, Modifier.padding(Ink.Gutter, 12.dp))
         } else {
             InkButton(if (busy) "Updating…" else "Update schedule", Modifier.fillMaxWidth(), enabled = true, inverted = busy) {
-                if (busy) return@InkButton
-                busy = true
-                status = "Checking…"
-                scope.launch {
-                    val updater = PackUpdater(BuildConfig.PACK_BASE_URL, app.store, File(context.cacheDir, "update"))
-                    val result = withContext(Dispatchers.IO) { updater.update { percent -> status = "Downloading $percent%" } }
-                    status = when (result) {
-                        UpdateResult.UpToDate -> "You have the latest schedule."
-                        is UpdateResult.Updated -> { app.packReplaced(app.store.current()); "Schedule updated." }
-                        is UpdateResult.Failed -> result.reason
-                    }
-                    busy = false
-                }
+                // The app, not this screen, owns the update: it finishes even if the rider leaves.
+                val updater = PackUpdater(BuildConfig.PACK_BASE_URL, app.store, File(context.cacheDir, "update"))
+                app.startUpdate { progress -> updater.update(progress) }
             }
         }
     }

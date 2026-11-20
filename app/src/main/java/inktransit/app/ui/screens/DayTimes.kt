@@ -10,6 +10,8 @@ import androidx.compose.ui.unit.dp
 import inktransit.app.pack.dayDepartures
 import inktransit.app.pack.directions
 import inktransit.app.pack.routeById
+import inktransit.app.pack.serviceDayFor
+import inktransit.app.time.dateOf
 import inktransit.app.pack.stopById
 import inktransit.app.time.dayOf
 import inktransit.app.ui.AppState
@@ -33,14 +35,14 @@ fun gridStartPage(times: List<LocalDateTime>, at: LocalDateTime, pageSize: Int):
 @Composable
 fun DayTimesScreen(app: AppState, stopId: Int, routeId: Int, dir: Int) {
     val at = app.viewTime
-    val day = dayOf(at.toLocalDate())
+    val day = remember(app.db, stopId, routeId, dir, at) { app.db.serviceDayFor(stopId, routeId, dir, at) }
     val route = remember(app.db, routeId) { app.db.routeById(routeId) }
     val stop = remember(app.db, stopId) { app.db.stopById(stopId) }
     val headsign = remember(app.db, routeId, dir) { app.db.directions(routeId).firstOrNull { it.dir == dir }?.headsign.orEmpty() }
     val departures = remember(app.db, stopId, routeId, dir, day) { app.db.dayDepartures(stopId, routeId, dir, day) }
     val others = departures.mapNotNull { it.otherHeadsign }.distinct()
     ScreenFrame("${route?.shortName.orEmpty()} → $headsign") {
-        InkText("${stop?.name.orEmpty()} · ${app.clock.dayLabel(at, app.now) ?: "Today"}", Ink.Small, Modifier.padding(Ink.Gutter, 4.dp), maxLines = 1)
+        InkText("${stop?.name.orEmpty()} · ${if (day == dayOf(app.now.toLocalDate().minusDays(1))) "Last night" else app.clock.dayLabel(dateOf(day), app.now.toLocalDate()) ?: "Today"}", Ink.Small, Modifier.padding(Ink.Gutter, 4.dp), maxLines = 1)
         WhenButton(app, Modifier.fillMaxWidth())
         StaleLine(app, at)
         PagedList(

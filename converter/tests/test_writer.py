@@ -10,6 +10,7 @@ from packbuilder.cli import main
 from conftest import MINI_TOML, REPO
 
 BUILT = "2026-11-02T00:00:00Z"
+GZ = "mini-20261102T000000Z.pack.gz"  # the build time is in the name: see test_published_pack_name
 
 
 @pytest.fixture(scope="module")
@@ -81,7 +82,7 @@ def test_frequency_and_span_rows(pack):
 
 
 def test_no_wal_or_tmp_left(out):
-    assert sorted(p.name for p in out.iterdir()) == ["index.json", "mini.pack", "mini.pack.gz"]
+    assert sorted(p.name for p in out.iterdir()) == sorted(["index.json", "mini.pack", GZ])
 
 
 def test_index_matches_pack(out):
@@ -89,17 +90,17 @@ def test_index_matches_pack(out):
     assert index["format"] == 1 and len(index["packs"]) == 1
     e = index["packs"][0]
     assert e["agency_id"] == "mini" and e["name"] == "Mini Transit" and e["format_version"] == 1
-    assert e["url"] == "mini.pack.gz" and e["built_at"] == BUILT
+    assert e["url"] == GZ and e["built_at"] == BUILT
     assert (e["valid_from"], e["valid_to"]) == (20261102, 20261115)
-    assert e["size"] == (out / "mini.pack.gz").stat().st_size
+    assert e["size"] == (out / GZ).stat().st_size
     raw = (out / "mini.pack").read_bytes()
     assert e["sha256"] == hashlib.sha256(raw).hexdigest()
-    assert gzip.decompress((out / "mini.pack.gz").read_bytes()) == raw
+    assert gzip.decompress((out / GZ).read_bytes()) == raw
 
 
 def test_build_is_reproducible(out, tmp_path):
     assert main(["build", "--config", str(MINI_TOML), "--out", str(tmp_path), "--built-at", BUILT]) == 0
-    for name in ("mini.pack", "mini.pack.gz", "index.json"):
+    for name in ("mini.pack", GZ, "index.json"):
         assert (tmp_path / name).read_bytes() == (out / name).read_bytes(), name
 
 
@@ -107,3 +108,12 @@ def test_checked_in_fixture_is_current(out):
     checked_in = REPO / "app" / "src" / "test" / "resources" / "mini.pack"
     assert checked_in.read_bytes() == (out / "mini.pack").read_bytes(), \
         "rebuild it: see docs/superpowers/plans, Task 6 step 5"
+
+
+def test_published_pack_name_changes_with_every_build(tmp_path):
+    # The index and the pack are uploaded separately. If the pack kept one name, a phone that
+    # fetched between the two uploads would pair the old checksum with the new file.
+    assert main(["build", "--config", str(MINI_TOML), "--out", str(tmp_path), "--built-at", "2026-11-09T11:00:05Z"]) == 0
+    index = json.loads((tmp_path / "index.json").read_text())
+    assert index["packs"][0]["url"] == "mini-20261109T110005Z.pack.gz"
+    assert (tmp_path / "mini-20261109T110005Z.pack.gz").exists()

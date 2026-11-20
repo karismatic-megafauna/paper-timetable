@@ -15,6 +15,7 @@ import inktransit.app.data.SavedRoute
 import inktransit.app.pack.PackDb
 import inktransit.app.pack.nextDepartures
 import inktransit.app.pack.route
+import inktransit.app.pack.servesStop
 import inktransit.app.pack.stop
 import inktransit.app.time.ServiceClock
 import inktransit.app.ui.AppState
@@ -42,7 +43,8 @@ data class RouteCard(
 fun buildCards(db: PackDb, clock: ServiceClock, saved: List<SavedRoute>, now: LocalDateTime): List<RouteCard> = saved.map { s ->
     val route = if (s.agencyId == db.meta.agencyId) db.route(s.routeKey) else null
     val stop = if (route != null) db.stop(s.stopKey) else null
-    if (route == null || stop == null) return@map RouteCard(s, false, emptyList(), null, null)
+    // The line and the stop can both survive an update while the line stops calling there.
+    if (route == null || stop == null || !db.servesStop(stop.id, route.id, s.dir)) return@map RouteCard(s, false, emptyList(), null, null)
     val next = db.nextDepartures(stop.id, route.id, s.dir, now, 3)
     RouteCard(s, true, next.map { clock.format(it.time) }, next.firstOrNull()?.let { clock.dayLabel(it.time, now) }, stop.placeId)
 }

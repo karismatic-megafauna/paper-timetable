@@ -12,6 +12,7 @@ on:
 
 permissions:
   contents: write
+  actions: write # only to re-enable this workflow; see "Keep the schedule alive"
 
 concurrency:
   group: packs
@@ -40,4 +41,17 @@ jobs:
           gh release view packs >/dev/null 2>&1 || gh release create packs \
             --title "Schedule packs" \
             --notes "Rebuilt weekly. The app downloads index.json and the pack it lists; these files are replaced in place."
-          gh release upload packs dist/lametro.pack.gz dist/index.json --clobber
+          # Order matters. The pack has a new name every build, so uploading it changes
+          # nothing for phones. Replacing index.json is the single step that publishes it.
+          gh release upload packs dist/lametro-*.pack.gz
+          gh release upload packs dist/index.json --clobber
+          # Keep the three newest packs: a phone that read the old index a moment ago can still fetch its pack.
+          gh release view packs --json assets --jq '.assets[].name | select(test("^lametro-.*\\.pack\\.gz$"))' \
+            | sort | head -n -3 | while read -r old; do gh release delete-asset packs "$old" --yes; done
+      # GitHub switches scheduled workflows off after 60 days without repository
+      # activity, and release uploads do not count. Rail schedules are only valid for
+      # two weeks, so a silent stop would strand every installed app.
+      - name: Keep the schedule alive
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/packs.yml/enable"

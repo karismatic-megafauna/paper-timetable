@@ -1,6 +1,9 @@
 package inktransit.app.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,6 +18,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -43,14 +49,29 @@ fun filterLines(routes: List<RouteRow>, typed: String): List<RouteRow> {
     return starts + rest.filter { it.shortName.contains(t, ignoreCase = true) }
 }
 
-/** A one-line text box. No cursor animation beyond the platform's; the border is the only decoration. */
+/**
+ * Compose blinks any text cursor that has a colour, about twice a second, and
+ * every blink is an E Ink refresh. An unspecified colour draws no cursor at
+ * all; InkField draws a still bar after the text instead.
+ */
+val STILL_CURSOR: Brush = SolidColor(Color.Unspecified)
+
+/** A one-line text box with a caret that does not blink. */
 @Composable
 fun InkField(value: String, hint: String, modifier: Modifier = Modifier, onChange: (String) -> Unit) {
     Box(modifier.border(2.dp, Ink.Black).padding(horizontal = 10.dp, vertical = 12.dp)) {
         if (value.isEmpty()) InkText(hint, Ink.Small, maxLines = 1)
+        var focused by remember { mutableStateOf(false) }
         BasicTextField(
-            value, onChange, Modifier.fillMaxWidth(), textStyle = Ink.Row, singleLine = true, cursorBrush = SolidColor(Ink.Black),
+            value, onChange, Modifier.fillMaxWidth().onFocusChanged { focused = it.isFocused },
+            textStyle = Ink.Row, singleLine = true, cursorBrush = STILL_CURSOR,
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters, autoCorrectEnabled = false, imeAction = ImeAction.Done),
+            decorationBox = { text ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.width(IntrinsicSize.Min)) { text() }
+                    if (focused && value.isNotEmpty()) Box(Modifier.padding(start = 2.dp).width(2.dp).height(24.dp).background(Ink.Black))
+                }
+            },
         )
     }
 }

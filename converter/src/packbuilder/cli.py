@@ -28,7 +28,12 @@ def build(config: Path, out: Path, built_at: datetime) -> str:
 
     # Everything above can fail on bad data; nothing is written until it has all succeeded.
     out.mkdir(parents=True, exist_ok=True)
-    pack, gz = out / f"{cfg.id}.pack", out / f"{cfg.id}.pack.gz"
+    # The published file's name carries the build time. The index is uploaded after it and
+    # points at it by name, so a phone can never pair an old checksum with a new pack.
+    stamp = built_at.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    pack, gz = out / f"{cfg.id}.pack", out / f"{cfg.id}-{stamp}.pack.gz"
+    for stale in out.glob(f"{cfg.id}-*.pack.gz"):
+        stale.unlink()
     writer.write_pack(pack, cfg, zones.pop(), stops, lines, place_list, sd, freq, spans, built_at)
     writer.write_gz(pack, gz)
     writer.write_index(out / "index.json", [writer.index_entry(pack, gz, cfg, sd, built_at)])
@@ -52,6 +57,8 @@ def main(argv: list[str] | None = None) -> int:
     built_at = datetime.now(timezone.utc).replace(microsecond=0)
     if args.built_at:
         built_at = datetime.fromisoformat(args.built_at.replace("Z", "+00:00"))
+        if built_at.tzinfo is None:
+            built_at = built_at.replace(tzinfo=timezone.utc)
     try:
         print(build(args.config, args.out, built_at))
     except GtfsError as e:

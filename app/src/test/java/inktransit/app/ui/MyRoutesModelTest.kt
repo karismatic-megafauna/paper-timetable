@@ -42,11 +42,16 @@ class MyRoutesModelTest {
         assertNull(early.dayLabel) // same calendar day
     }
 
-    @Test fun cardWithNoServiceThisWeekIsResolvedButEmpty() {
+    // After a reroute the line and the stop can both still exist while the line no longer
+    // calls there. "No service" would read as "not today"; the rider must be told to move.
+    @Test fun lineThatNoLongerServesTheStopIsUnresolved() {
+        val rerouted = dAlpha.copy(stopKey = "bus:301", stopName = "Far / Out")
+        assertFalse(buildCards(db, la, listOf(rerouted), at("2026-11-04T16:03")).single().resolved)
+    }
+
+    @Test fun aStopThatIsOnlyTheEndOfTheLineIsUnresolved() {
         val terminus = dAlpha.copy(stopKey = "rail:GAMMA", stopName = "Gamma Station")
-        val c = buildCards(db, la, listOf(terminus), at("2026-11-04T16:03")).single()
-        assertTrue(c.resolved)
-        assertTrue(c.times.isEmpty())
+        assertFalse(buildCards(db, la, listOf(terminus), at("2026-11-04T16:03")).single().resolved)
     }
 
     // Review Focus 4: a pack update can remove a line or a stop a rider had saved.
