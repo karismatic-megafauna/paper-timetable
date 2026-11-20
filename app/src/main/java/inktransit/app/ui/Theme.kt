@@ -1,5 +1,8 @@
 package inktransit.app.ui
 
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -52,14 +55,19 @@ fun InkText(text: String, style: TextStyle = Ink.Row, modifier: Modifier = Modif
     BasicText(text, modifier, style.copy(color = if (inverted) Ink.White else Ink.Black), maxLines = maxLines, overflow = TextOverflow.Ellipsis)
 }
 
-/** A bordered button at least 64 dp tall. A disabled button keeps its outline but drops its label weight. */
+/**
+ * A button at least 64 dp tall. Buttons sit edge to edge in bars and stacks,
+ * so they draw no outline of their own: boxes side by side double every line.
+ * The caller rules them off with [Rule] and [VRule]. Only a button standing
+ * alone asks for a [border]. A disabled button keeps its place but drops its label.
+ */
 @Composable
-fun InkButton(label: String, modifier: Modifier = Modifier, enabled: Boolean = true, inverted: Boolean = false, style: TextStyle = Ink.Row, onClick: () -> Unit) {
+fun InkButton(label: String, modifier: Modifier = Modifier, enabled: Boolean = true, inverted: Boolean = false, style: TextStyle = Ink.Row, border: Boolean = false, onClick: () -> Unit) {
     Box(
         modifier
             .heightIn(min = Ink.ButtonHeight)
             .background(if (inverted) Ink.Black else Ink.White)
-            .border(2.dp, Ink.Black)
+            .then(if (border) Modifier.border(2.dp, Ink.Black) else Modifier)
             .tap(enabled, onClick)
             .padding(horizontal = 8.dp),
         contentAlignment = Alignment.Center,
@@ -73,22 +81,30 @@ fun Rule() {
     Box(Modifier.fillMaxWidth().height(2.dp).background(Ink.Black))
 }
 
+/** A vertical line between two things side by side; it takes the height of its row. */
+@Composable
+fun VRule() {
+    Box(Modifier.fillMaxHeight().width(2.dp).background(Ink.Black))
+}
+
 /** Where this screen sits, its title, a rule, then the screen's content filling the rest. */
 @Composable
 fun ScreenFrame(title: String, trailing: @Composable () -> Unit = {}, content: @Composable ColumnScope.() -> Unit) {
     Column(Modifier.fillMaxSize()) {
         LocalBack.current?.let { back ->
             Box(
-                Modifier.fillMaxWidth().height(48.dp).border(2.dp, Ink.Black).tap(onClick = back.go).padding(horizontal = Ink.Gutter),
+                Modifier.fillMaxWidth().height(48.dp).tap(onClick = back.go).padding(horizontal = Ink.Gutter),
                 contentAlignment = Alignment.CenterStart,
             ) { InkText(back.label, Ink.Row, maxLines = 1) }
+            Rule()
         }
         androidx.compose.foundation.layout.Row(
-            Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(horizontal = Ink.Gutter),
+            // Anything trailing runs the full height of the row, so its dividing lines reach from the rule to the top.
+            Modifier.fillMaxWidth().height(IntrinsicSize.Min).heightIn(min = 52.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (title.length <= 16) InkText(title, Ink.Title, Modifier.weight(1f), maxLines = 1)
-            else InkText(title, Ink.Row, Modifier.weight(1f).padding(vertical = 4.dp), maxLines = 2)
+            if (title.length <= 16) InkText(title, Ink.Title, Modifier.weight(1f).padding(horizontal = Ink.Gutter), maxLines = 1)
+            else InkText(title, Ink.Row, Modifier.weight(1f).padding(Ink.Gutter, 4.dp), maxLines = 2)
             trailing()
         }
         Rule()

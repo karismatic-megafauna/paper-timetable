@@ -1,5 +1,6 @@
 package inktransit.app.ui.screens
 
+import inktransit.app.ui.Rule
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -45,6 +46,7 @@ fun AboutScreen(app: AppState) {
         if (BuildConfig.PACK_BASE_URL.isEmpty()) {
             InkText("Updates not set up in this build", Ink.Small, Modifier.padding(Ink.Gutter, 12.dp))
         } else {
+            Rule()
             InkButton(if (busy) "Updating…" else "Update schedule", Modifier.fillMaxWidth(), enabled = true, inverted = busy) {
                 // The app, not this screen, owns the update: it finishes even if the rider leaves.
                 val updater = PackUpdater(BuildConfig.PACK_BASE_URL, app.store, File(context.cacheDir, "update"))

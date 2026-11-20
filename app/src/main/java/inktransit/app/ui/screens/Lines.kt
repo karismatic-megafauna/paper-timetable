@@ -1,5 +1,6 @@
 package inktransit.app.ui.screens
 
+import inktransit.app.ui.VRule
 import inktransit.app.ui.InkButton
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -93,13 +94,16 @@ fun LinesScreen(app: AppState) {
     val dayType = dayTypeOf(dayOf(app.now.toLocalDate()))
     val routes = remember(app.db) { app.db.routes() }
     val tags = remember(app.db, dayType) { app.db.allFrequencyTags(dayType) }
-    ScreenFrame("LINES", trailing = { InkText(DAY_TYPE_NAMES[dayType], Ink.Small) }) {
+    ScreenFrame("LINES", trailing = { InkText(DAY_TYPE_NAMES[dayType], Ink.Small, Modifier.padding(end = Ink.Gutter)) }) {
         InkField(typed, "Type a line: 720, D …", Modifier.fillMaxWidth().padding(Ink.Gutter, 8.dp)) { typed = it }
         // Neither is marked while typing: the list then holds matches from both.
-        Row(Modifier.fillMaxWidth()) {
+        Rule()
+        Row(Modifier.fillMaxWidth().height(Ink.ButtonHeight)) {
             InkButton("Rail", Modifier.weight(1f), inverted = typed.isBlank() && app.linesRail) { typed = ""; app.linesRail = true }
+            VRule()
             InkButton("Bus", Modifier.weight(1f), inverted = typed.isBlank() && !app.linesRail) { typed = ""; app.linesRail = false }
         }
+        Rule()
         PagedList(
             linesShown(routes, typed, app.linesRail), rowDp = 56f, modifier = Modifier.weight(1f), resetKey = typed to app.linesRail,
             empty = { InkText("No line called “$typed”.", Ink.Row, Modifier.padding(Ink.Gutter, 20.dp)) },

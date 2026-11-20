@@ -60,7 +60,7 @@ fun NearMeScreen(app: AppState) {
             Fix.Off -> InkText("Location is switched off on this phone.", Ink.Row, message, maxLines = 4)
             Fix.None -> {
                 InkText("Couldn't find your location. Try again outside.", Ink.Row, message, maxLines = 4)
-                InkButton("Try again", Modifier.fillMaxWidth().padding(horizontal = Ink.Gutter)) { attempt++ }
+                InkButton("Try again", Modifier.fillMaxWidth().padding(horizontal = Ink.Gutter), border = true) { attempt++ }
             }
             is Fix.Fresh -> Nearest(app, f.lat, f.lon, null)
             is Fix.Stale -> Nearest(app, f.lat, f.lon, "Using your location from ${f.ageMinutes} min ago")

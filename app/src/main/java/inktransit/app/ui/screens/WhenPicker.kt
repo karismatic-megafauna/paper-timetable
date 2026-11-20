@@ -1,5 +1,8 @@
 package inktransit.app.ui.screens
 
+import androidx.compose.foundation.layout.fillMaxHeight
+import inktransit.app.ui.Rule
+import inktransit.app.ui.VRule
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
@@ -41,19 +44,25 @@ fun WhenPickerScreen(app: AppState) {
                 app.whenChoice = WhenChoice.Now
                 app.nav.pop()
             }
-            PagedList(dayOptions(app.now.toLocalDate()), rowDp = 64f, modifier = Modifier.weight(1f), divided = false) { (day, label) ->
+            Rule()
+            PagedList(dayOptions(app.now.toLocalDate()), rowDp = 66f, modifier = Modifier.weight(1f)) { (day, label) ->
                 InkButton(label, Modifier.fillMaxWidth()) { date = day }
             }
         }
         pickedHour == null -> ScreenFrame("WHAT HOUR?") {
-            (0 until 24).chunked(4).forEach { row ->
+            (0 until 24).chunked(4).forEachIndexed { r, row ->
+                if (r > 0) Rule()
                 Row(Modifier.fillMaxWidth().weight(1f)) {
-                    row.forEach { h -> InkButton(hourLabel(h), Modifier.weight(1f)) { hour = h } }
+                    row.forEachIndexed { c, h ->
+                        if (c > 0) VRule()
+                        InkButton(hourLabel(h), Modifier.weight(1f).fillMaxHeight()) { hour = h }
+                    }
                 }
             }
         }
         else -> ScreenFrame("${hourLabel(pickedHour).dropLast(1)}:__ ?") {
-            listOf(0, 15, 30, 45).forEach { minute ->
+            listOf(0, 15, 30, 45).forEachIndexed { i, minute ->
+                if (i > 0) Rule()
                 InkButton("%d:%02d%s".format(if (pickedHour % 12 == 0) 12 else pickedHour % 12, minute, if (pickedHour < 12) "a" else "p"), Modifier.fillMaxWidth().weight(1f)) {
                     app.whenChoice = WhenChoice.At(pickedDate.atTime(pickedHour, minute))
                     app.nav.pop()

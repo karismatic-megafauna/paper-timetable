@@ -1,5 +1,8 @@
 package inktransit.app.ui.screens
 
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.fillMaxHeight
+import inktransit.app.ui.VRule
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -41,7 +44,12 @@ fun DayTimesScreen(app: AppState, stopId: Int, routeId: Int, dir: Int) {
     val headsign = remember(app.db, routeId, dir) { app.db.directions(routeId).firstOrNull { it.dir == dir }?.headsign.orEmpty() }
     val departures = remember(app.db, stopId, routeId, dir, day) { app.db.dayDepartures(stopId, routeId, dir, day) }
     val others = departures.mapNotNull { it.otherHeadsign }.distinct()
-    ScreenFrame("${route?.shortName.orEmpty()} → $headsign") {
+    ScreenFrame("${route?.shortName.orEmpty()} → $headsign", trailing = {
+        if (route != null && stop != null) {
+            VRule()
+            Star(app.isSaved(route.key, dir, stop.key), Modifier.fillMaxHeight().width(64.dp)) { app.toggleSaved(route, dir, stop.key, stop.name, headsign) }
+        }
+    }) {
         InkText("${stop?.name.orEmpty()} · ${if (day == dayOf(app.now.toLocalDate().minusDays(1))) "Last night" else app.clock.dayLabel(dateOf(day), app.now.toLocalDate()) ?: "Today"}", Ink.Small, Modifier.padding(Ink.Gutter, 4.dp), maxLines = 1)
         WhenButton(app, Modifier.fillMaxWidth())
         StaleLine(app, at)

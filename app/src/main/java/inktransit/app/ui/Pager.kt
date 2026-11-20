@@ -74,18 +74,21 @@ fun <T> PagedList(
     val shown = page.coerceIn(0, pages - 1)
     Column(Modifier.fillMaxSize()) {
         Column(Modifier.weight(1f).fillMaxWidth()) {
-            if (items.isEmpty()) empty() else pageOf(items, shown, pageSize).forEach {
+            if (items.isEmpty()) empty() else pageOf(items, shown, pageSize).forEachIndexed { i, it ->
                 Column(Modifier.height(layout.slotDp.dp).fillMaxWidth()) {
                     Box(Modifier.weight(1f).fillMaxWidth(), propagateMinConstraints = true) { row(it) }
-                    if (divided) Rule()
+                    // The bottom row of a full page rests on the Prev/Next bar's own rule; a second line there would double it.
+                    if (divided && !(pages > 1 && i == pageSize - 1)) Rule()
                 }
             }
         }
         if (pages > 1) {
             Rule()
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.fillMaxWidth().height(Ink.ButtonHeight), verticalAlignment = Alignment.CenterVertically) {
                 InkButton("Prev", Modifier.weight(1f), enabled = shown > 0) { page = shown - 1 }
+                VRule()
                 Box(Modifier.weight(1f), contentAlignment = Alignment.Center) { InkText("${shown + 1} of $pages", Ink.Small) }
+                VRule()
                 InkButton("Next", Modifier.weight(1f), enabled = shown < pages - 1) { page = shown + 1 }
             }
         }

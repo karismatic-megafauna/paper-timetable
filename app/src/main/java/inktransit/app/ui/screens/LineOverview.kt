@@ -1,5 +1,7 @@
 package inktransit.app.ui.screens
 
+import androidx.compose.foundation.layout.height
+import inktransit.app.ui.VRule
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -77,11 +79,14 @@ fun LineOverviewScreen(app: AppState, routeId: Int) {
     val day = days[dayType]
     ScreenFrame(if (route.kind == 0) "${route.shortName} LINE" else "LINE ${route.shortName}") {
         InkText(route.longName, Ink.Small, Modifier.padding(Ink.Gutter, 4.dp), maxLines = 2)
-        Row(Modifier.fillMaxWidth()) {
+        Rule()
+        Row(Modifier.fillMaxWidth().height(Ink.ButtonHeight)) {
             DAY_TYPE_NAMES.forEachIndexed { i, name ->
+                if (i > 0) VRule()
                 InkButton(name, Modifier.weight(1f), inverted = i == dayType, style = Ink.Small) { dayType = i }
             }
         }
+        Rule()
         Column(Modifier.weight(1f).fillMaxWidth().padding(Ink.Gutter, 6.dp)) {
             InkText(day.firstLast ?: "Does not run", Ink.Row, Modifier.padding(bottom = 4.dp), maxLines = 1)
             if (day.firstLast != null) day.bands.forEach { band ->
@@ -93,8 +98,8 @@ fun LineOverviewScreen(app: AppState, routeId: Int) {
             }
             Spacer(Modifier.weight(1f))
         }
-        Rule()
         directions.forEach { d ->
+            Rule()
             InkButton("→ ${d.headsign}", Modifier.fillMaxWidth()) { app.nav.push(Screen.DirectionStops(routeId, d.dir)) }
         }
     }

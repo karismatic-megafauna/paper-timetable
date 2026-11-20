@@ -62,6 +62,15 @@ fun WhenButton(app: AppState, modifier: Modifier = Modifier) {
     InkButton(whenLabel(app.whenChoice, app.clock, app.now), modifier, inverted = app.whenChoice != WhenChoice.Now, style = Ink.Small) {
         app.nav.push(Screen.WhenPicker)
     }
+    Rule()
+}
+
+/** Filled when the route is on the home screen; tapping adds or removes it. */
+@Composable
+fun Star(saved: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Box(modifier.tap(onClick = onClick), contentAlignment = Alignment.Center) {
+        InkText(if (saved) "★" else "☆", Ink.Title.copy(fontSize = Ink.Title.fontSize * 1.3f))
+    }
 }
 
 /** Every line at the place with its next two departures; the stop the rider came in through is listed first. */
@@ -110,13 +119,7 @@ fun StopViewScreen(app: AppState, placeId: Int, highlightStopId: Int?) {
                         row.departures.mapNotNull { it.otherHeadsign }.distinct().forEach { InkText("* only to $it", Ink.Small, maxLines = 1) }
                     }
                 }
-                Box(
-                    Modifier.size(64.dp).tap {
-                        val route = SavedRoute(app.db.meta.agencyId, row.route.key, row.dir, row.stopKey, row.route.shortName, row.headsign, row.stopName)
-                        app.editSaved { if (saved) remove(route) else add(route) }
-                    },
-                    contentAlignment = Alignment.Center,
-                ) { InkText(if (saved) "★" else "☆", Ink.Title.copy(fontSize = Ink.Title.fontSize * 1.3f)) }
+                Star(saved, Modifier.size(64.dp)) { app.toggleSaved(row.route, row.dir, row.stopKey, row.stopName, row.headsign) }
             }
         }
     }

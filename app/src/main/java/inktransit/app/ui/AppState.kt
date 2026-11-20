@@ -55,6 +55,13 @@ class AppState(val store: PackStore, private val saved: SavedRoutes, private val
     fun isSaved(routeKey: String, dir: Int, stopKey: String) =
         savedRoutes.any { it.sameRouteAs(db.meta.agencyId, routeKey, dir, stopKey) }
 
+    /** Stars the route if it is not saved, unstars it if it is. */
+    fun toggleSaved(route: inktransit.app.pack.RouteRow, dir: Int, stopKey: String, stopName: String, headsign: String) {
+        val item = SavedRoute(db.meta.agencyId, route.key, dir, stopKey, route.shortName, headsign, stopName)
+        val saved = isSaved(route.key, dir, stopKey)
+        editSaved { if (saved) remove(item) else add(item) }
+    }
+
     fun editSaved(change: SavedRoutes.() -> Unit) {
         saved.change()
         savedRoutes = saved.all()

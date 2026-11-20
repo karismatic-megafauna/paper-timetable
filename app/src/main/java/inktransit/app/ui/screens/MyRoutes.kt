@@ -1,5 +1,9 @@
 package inktransit.app.ui.screens
 
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.fillMaxHeight
+import inktransit.app.ui.VRule
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -55,8 +59,12 @@ fun MyRoutesScreen(app: AppState) {
     var editing by remember { mutableStateOf(false) }
     val cards = buildCards(app.db, app.clock, app.savedRoutes, app.now)
     ScreenFrame("MY ROUTES", trailing = {
-        if (cards.isNotEmpty()) InkButton(if (editing) "Done" else "Edit", Modifier.padding(start = 6.dp), style = Ink.Small, inverted = editing) { editing = !editing }
-        InkButton("About", Modifier.padding(start = 6.dp), style = Ink.Small) { app.nav.push(Screen.About) }
+        if (cards.isNotEmpty()) {
+            VRule()
+            InkButton(if (editing) "Done" else "Edit", Modifier.fillMaxHeight().widthIn(min = 72.dp), style = Ink.Small, inverted = editing) { editing = !editing }
+        }
+        VRule()
+        InkButton("About", Modifier.fillMaxHeight().widthIn(min = 72.dp), style = Ink.Small) { app.nav.push(Screen.About) }
     }) {
         StaleLine(app, app.now)
         PagedList(
@@ -73,9 +81,9 @@ fun MyRoutesScreen(app: AppState) {
                 InkText(card.saved.stopName, Ink.Small, maxLines = 1)
                 when {
                     editing -> Row(Modifier.fillMaxWidth().padding(top = 4.dp)) {
-                        InkButton("Up", Modifier.weight(1f), style = Ink.Small) { app.editSaved { move(card.saved, up = true) } }
-                        InkButton("Down", Modifier.weight(1f), style = Ink.Small) { app.editSaved { move(card.saved, up = false) } }
-                        InkButton("Remove", Modifier.weight(1f), style = Ink.Small) { app.editSaved { remove(card.saved) } }
+                        InkButton("Up", Modifier.weight(1f), style = Ink.Small, border = true) { app.editSaved { move(card.saved, up = true) } }
+                        InkButton("Down", Modifier.weight(1f), style = Ink.Small, border = true) { app.editSaved { move(card.saved, up = false) } }
+                        InkButton("Remove", Modifier.weight(1f), style = Ink.Small, border = true) { app.editSaved { remove(card.saved) } }
                     }
                     !card.resolved -> InkText("No longer in schedule", Ink.Row, maxLines = 1)
                     card.times.isEmpty() -> InkText("No service", Ink.Row, maxLines = 1)
@@ -84,9 +92,11 @@ fun MyRoutesScreen(app: AppState) {
             }
         }
         Rule()
-        Row(Modifier.fillMaxWidth()) {
+        Row(Modifier.fillMaxWidth().height(Ink.ButtonHeight)) {
             InkButton("Lines", Modifier.weight(1f)) { app.nav.push(Screen.Lines) }
+            VRule()
             InkButton("Near me", Modifier.weight(1f)) { app.nav.push(Screen.NearMe) }
+            VRule()
             InkButton("Search", Modifier.weight(1f)) { app.nav.push(Screen.Search) }
         }
     }
