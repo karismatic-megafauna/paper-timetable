@@ -38,6 +38,8 @@ class AppState(val store: PackStore, private val saved: SavedRoutes, private val
         private set
 
     /** Kept in memory only, and reset whenever the app comes back to the front. */
+    /** Which half of the Lines list is open; kept here so coming back from a line returns to it. */
+    var linesRail: Boolean by mutableStateOf(true)
     var whenChoice: WhenChoice by mutableStateOf(WhenChoice.Now)
 
     /** The moment the schedule screens should show. My Routes ignores this and always shows [now]. */

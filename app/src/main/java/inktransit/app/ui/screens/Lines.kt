@@ -1,5 +1,6 @@
 package inktransit.app.ui.screens
 
+import inktransit.app.ui.InkButton
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -49,6 +50,10 @@ fun filterLines(routes: List<RouteRow>, typed: String): List<RouteRow> {
     return starts + rest.filter { it.shortName.contains(t, ignoreCase = true) }
 }
 
+/** Rail or bus lines while the box is empty; once something is typed, matches from both. */
+fun linesShown(routes: List<RouteRow>, typed: String, rail: Boolean): List<RouteRow> =
+    if (typed.isBlank()) routes.filter { (it.kind == 0) == rail } else filterLines(routes, typed)
+
 /**
  * Compose blinks any text cursor that has a colour, about twice a second, and
  * every blink is an E Ink refresh. An unspecified colour draws no cursor at
@@ -84,19 +89,22 @@ fun LinesScreen(app: AppState) {
     val tags = remember(app.db, dayType) { app.db.allFrequencyTags(dayType) }
     ScreenFrame("LINES", trailing = { InkText(DAY_TYPE_NAMES[dayType], Ink.Small) }) {
         InkField(typed, "Type a line: 720, D …", Modifier.fillMaxWidth().padding(Ink.Gutter, 8.dp)) { typed = it }
-        Rule()
+        // Neither is marked while typing: the list then holds matches from both.
+        Row(Modifier.fillMaxWidth()) {
+            InkButton("Rail", Modifier.weight(1f), inverted = typed.isBlank() && app.linesRail) { typed = ""; app.linesRail = true }
+            InkButton("Bus", Modifier.weight(1f), inverted = typed.isBlank() && !app.linesRail) { typed = ""; app.linesRail = false }
+        }
         PagedList(
-            filterLines(routes, typed), pageSize = 6, modifier = Modifier.weight(1f), resetKey = typed,
+            linesShown(routes, typed, app.linesRail), rowDp = 56f, modifier = Modifier.weight(1f), resetKey = typed to app.linesRail,
             empty = { InkText("No line called “$typed”.", Ink.Row, Modifier.padding(Ink.Gutter, 20.dp)) },
         ) { route ->
             Row(
-                Modifier.fillMaxWidth().tap { app.nav.push(Screen.LineOverview(route.id)) }.padding(Ink.Gutter, 12.dp),
+                Modifier.fillMaxWidth().tap { app.nav.push(Screen.LineOverview(route.id)) }.padding(horizontal = Ink.Gutter),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 InkText(route.shortName, Ink.Row, Modifier.width(if (route.shortName.length > 4) 150.dp else 64.dp), maxLines = 1)
                 InkText(tags[route.id] ?: "no service", Ink.Small, maxLines = 1)
             }
-            Rule()
         }
     }
 }

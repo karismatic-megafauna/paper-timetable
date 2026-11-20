@@ -6,7 +6,7 @@ import inktransit.app.pack.place
 import inktransit.app.pack.stop
 import inktransit.app.ui.screens.boardRows
 import inktransit.app.ui.screens.dayOptions
-import inktransit.app.ui.screens.gridStartPage
+import inktransit.app.ui.screens.gridStartRow
 import inktransit.app.ui.screens.isBeyondPublished
 import inktransit.app.ui.screens.staleText
 import inktransit.app.ui.screens.whenLabel
@@ -76,11 +76,11 @@ class WhenTest {
         assertEquals(at("2026-11-09T07:00"), row.departures.first().time) // Monday
     }
 
-    @Test fun dayGridOpensOnThePageHoldingTheChosenTime() {
+    @Test fun dayGridOpensOnTheRowHoldingTheChosenTime() {
         val times = (0 until 60).map { at("2026-11-04T05:00").plusMinutes(it * 10L) } // 5:00a … 2:50p
-        assertEquals(0, gridStartPage(times, at("2026-11-04T04:00"), 24))
-        assertEquals(1, gridStartPage(times, at("2026-11-04T09:05"), 24)) // 9:10a is index 25
-        assertEquals(2, gridStartPage(times, at("2026-11-04T23:00"), 24)) // after the last: stay on the last page
-        assertEquals(0, gridStartPage(emptyList(), at("2026-11-04T09:05"), 24))
+        assertEquals(0, gridStartRow(times, at("2026-11-04T04:00"), 4))
+        assertEquals(6, gridStartRow(times, at("2026-11-04T09:05"), 4)) // 9:10a is index 25, in the seventh row of four
+        assertEquals(14, gridStartRow(times, at("2026-11-04T23:00"), 4)) // after the last: the last row
+        assertEquals(0, gridStartRow(emptyList(), at("2026-11-04T09:05"), 4))
     }
 }

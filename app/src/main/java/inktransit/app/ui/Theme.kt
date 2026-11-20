@@ -73,10 +73,11 @@ fun Rule() {
     Box(Modifier.fillMaxWidth().height(2.dp).background(Ink.Black))
 }
 
-/** Title row, a rule, then the screen's content filling the rest. */
+/** Where this screen sits, its title, a rule, then the screen's content filling the rest. */
 @Composable
 fun ScreenFrame(title: String, trailing: @Composable () -> Unit = {}, content: @Composable ColumnScope.() -> Unit) {
     Column(Modifier.fillMaxSize()) {
+        LocalCrumb.current?.let { InkText(it, Ink.Small, Modifier.fillMaxWidth().padding(start = Ink.Gutter, end = Ink.Gutter, top = 6.dp), maxLines = 1) }
         androidx.compose.foundation.layout.Row(
             Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(horizontal = Ink.Gutter),
             verticalAlignment = Alignment.CenterVertically,

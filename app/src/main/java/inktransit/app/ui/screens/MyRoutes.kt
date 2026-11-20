@@ -1,5 +1,6 @@
 package inktransit.app.ui.screens
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -59,13 +60,14 @@ fun MyRoutesScreen(app: AppState) {
     }) {
         StaleLine(app, app.now)
         PagedList(
-            cards, pageSize = if (editing) 3 else 4, modifier = Modifier.weight(1f), resetKey = editing,
+            cards, rowDp = if (editing) 136f else 92f, modifier = Modifier.weight(1f), resetKey = editing,
             empty = { InkText("No routes yet. Tap Lines, pick a line, a direction, then your stop, and tap the star.", Ink.Row, Modifier.padding(Ink.Gutter, 20.dp), maxLines = 6) },
         ) { card ->
             Column(
                 Modifier.fillMaxWidth()
                     .tap(enabled = !editing && card.placeId != null) { app.nav.push(Screen.StopView(card.placeId!!, app.db.stop(card.saved.stopKey)?.id)) }
                     .padding(Ink.Gutter, 7.dp),
+                verticalArrangement = Arrangement.Center,
             ) {
                 InkText("${card.saved.routeName} → ${card.saved.headsign}", Ink.Row, maxLines = 1)
                 InkText(card.saved.stopName, Ink.Small, maxLines = 1)
@@ -80,7 +82,6 @@ fun MyRoutesScreen(app: AppState) {
                     else -> InkText(listOfNotNull(card.dayLabel).plus(card.times).joinToString("   "), Ink.Row, maxLines = 1)
                 }
             }
-            Rule()
         }
         Rule()
         Row(Modifier.fillMaxWidth()) {

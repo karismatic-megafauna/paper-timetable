@@ -19,6 +19,8 @@ sealed interface Screen {
 class Nav(start: Screen = Screen.MyRoutes) {
     private val stack = mutableStateListOf(start)
     val top: Screen get() = stack.last()
+    /** Every screen from home to the one on show. */
+    val trail: List<Screen> get() = stack.toList()
     val canPop: Boolean get() = stack.size > 1
     fun push(screen: Screen) { stack.add(screen) }
     fun pop(): Boolean = if (canPop) { stack.removeAt(stack.lastIndex); true } else false

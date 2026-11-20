@@ -1,5 +1,6 @@
 package inktransit.app.ui.screens
 
+import inktransit.app.pack.placeLines
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -70,9 +71,10 @@ fun NearMeScreen(app: AppState) {
 @Composable
 private fun androidx.compose.foundation.layout.ColumnScope.Nearest(app: AppState, lat: Double, lon: Double, note: String?) {
     val places = remember(app.db, lat, lon) { app.db.nearestPlaces(lat, lon, 18) }
+    val lines = remember(app.db, places) { app.db.placeLines(places.map { it.first.id }) }
     note?.let { InkText(it, Ink.Small, Modifier.padding(Ink.Gutter, 4.dp)) }
     PagedList(
-        places, pageSize = 6, modifier = Modifier.weight(1f),
+        places, rowDp = 72f, modifier = Modifier.weight(1f),
         empty = { InkText("No ${app.db.meta.agencyName} stops near here.", Ink.Row, Modifier.padding(Ink.Gutter, 20.dp), maxLines = 3) },
-    ) { (place, metres) -> PlaceRowItem(app, place, formatDistance(metres, Locale.getDefault())) }
+    ) { (place, metres) -> PlaceRowItem(app, place, formatDistance(metres, Locale.getDefault()), lines[place.id].orEmpty().joinToString(" · ")) }
 }

@@ -41,7 +41,7 @@ fun WhenPickerScreen(app: AppState) {
                 app.whenChoice = WhenChoice.Now
                 app.nav.pop()
             }
-            PagedList(dayOptions(app.now.toLocalDate()), pageSize = 5, modifier = Modifier.weight(1f)) { (day, label) ->
+            PagedList(dayOptions(app.now.toLocalDate()), rowDp = 64f, modifier = Modifier.weight(1f), divided = false) { (day, label) ->
                 InkButton(label, Modifier.fillMaxWidth()) { date = day }
             }
         }
@@ -54,7 +54,7 @@ fun WhenPickerScreen(app: AppState) {
         }
         else -> ScreenFrame("${hourLabel(pickedHour).dropLast(1)}:__ ?") {
             listOf(0, 15, 30, 45).forEach { minute ->
-                InkButton("%d:%02d%s".format(if (pickedHour % 12 == 0) 12 else pickedHour % 12, minute, if (pickedHour < 12) "a" else "p"), Modifier.fillMaxWidth()) {
+                InkButton("%d:%02d%s".format(if (pickedHour % 12 == 0) 12 else pickedHour % 12, minute, if (pickedHour < 12) "a" else "p"), Modifier.fillMaxWidth().weight(1f)) {
                     app.whenChoice = WhenChoice.At(pickedDate.atTime(pickedHour, minute))
                     app.nav.pop()
                 }

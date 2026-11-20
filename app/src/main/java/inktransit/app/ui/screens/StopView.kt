@@ -1,5 +1,7 @@
 package inktransit.app.ui.screens
 
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -66,24 +68,36 @@ fun WhenButton(app: AppState, modifier: Modifier = Modifier) {
 fun boardRows(db: PackDb, placeId: Int, at: LocalDateTime, highlightStopId: Int?): List<BoardRow> =
     db.placeBoard(placeId, at, 2).sortedBy { if (it.stopId == highlightStopId) 0 else 1 }
 
+/** A line and direction that leaves from two poles at one place; only then is the pole worth naming. */
+private fun ambiguous(rows: List<BoardRow>): Set<Pair<Int, Int>> = rows.groupBy { it.route.id to it.dir }.filterValues { it.size > 1 }.keys
+
+/** The height the tallest row at a place needs: two big lines, plus a small one for each extra note. */
+fun boardRowDp(rows: List<BoardRow>): Float {
+    val twoPoles = ambiguous(rows)
+    val notes = rows.maxOfOrNull { row ->
+        (if ((row.route.id to row.dir) in twoPoles) 1 else 0) + row.departures.mapNotNull { it.otherHeadsign }.distinct().size
+    } ?: 0
+    return 68f + 21f * notes
+}
+
 @Composable
 fun StopViewScreen(app: AppState, placeId: Int, highlightStopId: Int?) {
     val place = remember(app.db, placeId) { app.db.place(placeId) }
     val at = app.viewTime
     val rows = remember(app.db, placeId, at, highlightStopId) { boardRows(app.db, placeId, at, highlightStopId) }
-    // A stop name is only worth a line when the same line and direction leaves from two poles here.
-    val ambiguous = rows.groupBy { it.route.id to it.dir }.filterValues { it.size > 1 }.keys
+    val ambiguous = ambiguous(rows)
     ScreenFrame(place.name) {
         WhenButton(app, Modifier.fillMaxWidth())
         StaleLine(app, at)
         PagedList(
-            rows, pageSize = 4, modifier = Modifier.weight(1f), resetKey = placeId,
+            rows, rowDp = boardRowDp(rows), modifier = Modifier.weight(1f), resetKey = placeId,
             empty = { InkText("Nothing departs from here.", Ink.Row, Modifier.padding(Ink.Gutter, 20.dp)) },
         ) { row ->
             val saved = app.isSaved(row.route.key, row.dir, row.stopKey)
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Column(
-                    Modifier.weight(1f).tap { app.nav.push(Screen.DayTimes(row.stopId, row.route.id, row.dir)) }.padding(Ink.Gutter, 6.dp),
+                    Modifier.weight(1f).fillMaxHeight().tap { app.nav.push(Screen.DayTimes(row.stopId, row.route.id, row.dir)) }.padding(horizontal = Ink.Gutter),
+                    verticalArrangement = Arrangement.Center,
                 ) {
                     InkText("${row.route.shortName} → ${row.headsign}", Ink.Row, maxLines = 1)
                     if ((row.route.id to row.dir) in ambiguous) InkText("at ${row.stopName}", Ink.Small, maxLines = 1)
@@ -104,7 +118,6 @@ fun StopViewScreen(app: AppState, placeId: Int, highlightStopId: Int?) {
                     contentAlignment = Alignment.Center,
                 ) { InkText(if (saved) "★" else "☆", Ink.Title.copy(fontSize = Ink.Title.fontSize * 1.3f)) }
             }
-            Rule()
         }
     }
 }

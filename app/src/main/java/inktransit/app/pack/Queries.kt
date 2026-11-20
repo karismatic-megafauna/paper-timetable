@@ -189,6 +189,23 @@ private fun searchable(text: String): String = text.lowercase().replace(Regex("[
  * Places whose name contains every word typed, in any order ("vermont wilshire"
  * finds "Wilshire / Vermont Station"). Names starting with the first word come first.
  */
+/** The lines that can be boarded at each of [placeIds], rail first, then buses in line order. */
+fun PackDb.placeLines(placeIds: List<Int>): Map<Int, List<String>> {
+    if (placeIds.isEmpty()) return emptyMap()
+    val out = LinkedHashMap<Int, MutableList<String>>()
+    sql.rawQuery(
+        """SELECT DISTINCT s.place_id, r.short_name, r.sort
+           FROM stop s
+           JOIN pattern_stop ps ON ps.stop_id = s.id
+           JOIN pattern p ON p.id = ps.pattern_id AND ps.seq < p.stop_count - 1
+           JOIN route r ON r.id = p.route_id
+           WHERE s.place_id IN (${placeIds.joinToString(",")})
+           ORDER BY r.sort""",
+        null,
+    ).use { c -> while (c.moveToNext()) out.getOrPut(c.getInt(0)) { ArrayList() }.add(c.getString(1)) }
+    return out
+}
+
 fun PackDb.searchPlaces(q: String, limit: Int): List<PlaceRow> {
     val words = searchable(q).split(" ").filter { it.isNotEmpty() }
     if (words.isEmpty()) return emptyList()

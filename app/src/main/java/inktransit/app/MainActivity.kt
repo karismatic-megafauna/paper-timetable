@@ -1,5 +1,9 @@
 package inktransit.app
 
+import inktransit.app.ui.crumbLabels
+import inktransit.app.ui.crumbText
+import inktransit.app.ui.LocalCrumb
+import androidx.compose.runtime.CompositionLocalProvider
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -45,6 +49,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             EInkTheme {
                 BackHandler(enabled = app.nav.canPop) { app.nav.pop() }
+                CompositionLocalProvider(LocalCrumb provides crumbText(crumbLabels(app.db, app.nav.trail))) {
                 when (val screen = app.nav.top) {
                     Screen.MyRoutes -> MyRoutesScreen(app)
                     Screen.Lines -> LinesScreen(app)
@@ -56,6 +61,7 @@ class MainActivity : ComponentActivity() {
                     Screen.Search -> SearchScreen(app)
                     Screen.NearMe -> NearMeScreen(app)
                     Screen.About -> AboutScreen(app)
+                }
                 }
             }
         }
