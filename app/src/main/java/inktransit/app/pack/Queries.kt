@@ -26,6 +26,7 @@ data class BoardRow(
     val dir: Int,
     val headsign: String,
     val stopId: Int,
+    val stopKey: String,
     val stopName: String,
     val departures: List<Departure>,
 )
@@ -106,10 +107,10 @@ fun PackDb.nextDepartures(stopId: Int, routeId: Int, dir: Int, from: LocalDateTi
  * no departures, so the rider can see the line stops here but is not running.
  */
 fun PackDb.placeBoard(placeId: Int, from: LocalDateTime, perRow: Int): List<BoardRow> {
-    data class Key(val route: RouteRow, val dir: Int, val headsign: String, val stopId: Int, val stopName: String)
+    data class Key(val route: RouteRow, val dir: Int, val headsign: String, val stopId: Int, val stopKey: String, val stopName: String)
     val keys = ArrayList<Key>()
     sql.rawQuery(
-        """SELECT DISTINCT r.id, r.key, r.short_name, r.long_name, r.kind, p.dir, d.headsign, s.id, s.name
+        """SELECT DISTINCT r.id, r.key, r.short_name, r.long_name, r.kind, p.dir, d.headsign, s.id, s.key, s.name
            FROM stop s
            JOIN pattern_stop ps ON ps.stop_id = s.id
            JOIN pattern p ON p.id = ps.pattern_id AND ps.seq < p.stop_count - 1
@@ -119,9 +120,9 @@ fun PackDb.placeBoard(placeId: Int, from: LocalDateTime, perRow: Int): List<Boar
            ORDER BY r.sort, p.dir, s.id""",
         arrayOf("$placeId"),
     ).use { c ->
-        while (c.moveToNext()) keys.add(Key(c.routeRow(), c.getInt(5), c.getString(6), c.getInt(7), c.getString(8)))
+        while (c.moveToNext()) keys.add(Key(c.routeRow(), c.getInt(5), c.getString(6), c.getInt(7), c.getString(8), c.getString(9)))
     }
-    return keys.map { BoardRow(it.route, it.dir, it.headsign, it.stopId, it.stopName, nextDepartures(it.stopId, it.route.id, it.dir, from, perRow)) }
+    return keys.map { BoardRow(it.route, it.dir, it.headsign, it.stopId, it.stopKey, it.stopName, nextDepartures(it.stopId, it.route.id, it.dir, from, perRow)) }
 }
 
 data class DirectionRow(val routeId: Int, val dir: Int, val headsign: String)
@@ -200,3 +201,13 @@ fun PackDb.searchPlaces(q: String, limit: Int): List<PlaceRow> {
     }
     return hits.sortedWith(compareBy({ !it.second.startsWith(words[0]) }, { it.first.name })).take(limit).map { it.first }
 }
+
+fun PackDb.routeById(id: Int): RouteRow? =
+    sql.rawQuery("SELECT id, key, short_name, long_name, kind FROM route WHERE id = ?", arrayOf("$id")).use {
+        if (it.moveToFirst()) RouteRow(it.getInt(0), it.getString(1), it.getString(2), it.getString(3), it.getInt(4)) else null
+    }
+
+fun PackDb.stopById(id: Int): StopRow? =
+    sql.rawQuery("SELECT id, key, place_id, name FROM stop WHERE id = ?", arrayOf("$id")).use {
+        if (it.moveToFirst()) StopRow(it.getInt(0), it.getString(1), it.getInt(2), it.getString(3)) else null
+    }

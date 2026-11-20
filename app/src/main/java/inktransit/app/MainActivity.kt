@@ -16,6 +16,10 @@ import inktransit.app.ui.screens.DirectionStopsScreen
 import inktransit.app.ui.screens.LineOverviewScreen
 import inktransit.app.ui.screens.LinesScreen
 import inktransit.app.ui.screens.MyRoutesScreen
+import inktransit.app.ui.screens.DayTimesScreen
+import inktransit.app.ui.screens.StopViewScreen
+import inktransit.app.ui.screens.WhenPickerScreen
+import inktransit.app.ui.WhenChoice
 import java.io.File
 
 class MainActivity : ComponentActivity() {
@@ -44,10 +48,19 @@ class MainActivity : ComponentActivity() {
                     Screen.Lines -> LinesScreen(app)
                     is Screen.LineOverview -> LineOverviewScreen(app, screen.routeId)
                     is Screen.DirectionStops -> DirectionStopsScreen(app, screen.routeId, screen.dir)
+                    is Screen.StopView -> StopViewScreen(app, screen.placeId, screen.highlightStopId)
+                    is Screen.DayTimes -> DayTimesScreen(app, screen.stopId, screen.routeId, screen.dir)
+                    Screen.WhenPicker -> WhenPickerScreen(app)
                     else -> ScreenFrame(screen.toString()) {}
                 }
             }
         }
+    }
+
+    // Coming back to the app always shows the present; a chosen time is for one look ahead.
+    override fun onRestart() {
+        super.onRestart()
+        app.whenChoice = WhenChoice.Now
     }
 
     override fun onResume() {

@@ -55,6 +55,7 @@ fun MyRoutesScreen(app: AppState) {
         if (cards.isNotEmpty()) InkButton(if (editing) "Done" else "Edit", Modifier.padding(start = 6.dp), style = Ink.Small, inverted = editing) { editing = !editing }
         InkButton("About", Modifier.padding(start = 6.dp), style = Ink.Small) { app.nav.push(Screen.About) }
     }) {
+        StaleLine(app, app.now)
         PagedList(
             cards, pageSize = if (editing) 3 else 4, modifier = Modifier.weight(1f), resetKey = editing,
             empty = { InkText("No routes yet. Tap Lines, pick a line, a direction, then your stop, and tap the star.", Ink.Row, Modifier.padding(Ink.Gutter, 20.dp), maxLines = 6) },

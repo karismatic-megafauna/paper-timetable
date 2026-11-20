@@ -12,6 +12,12 @@ import java.time.Instant
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 
+/** What moment the schedule screens show: the present, or a day and time the rider picked to plan ahead. */
+sealed interface WhenChoice {
+    data object Now : WhenChoice
+    data class At(val time: LocalDateTime) : WhenChoice
+}
+
 /** Everything the screens share. Held by the activity; screens only read it and call its methods. */
 class AppState(val store: PackStore, private val saved: SavedRoutes, private val instant: () -> Instant = Instant::now) {
     var db: PackDb by mutableStateOf(store.current())
@@ -24,6 +30,12 @@ class AppState(val store: PackStore, private val saved: SavedRoutes, private val
         private set
     var savedRoutes: List<SavedRoute> by mutableStateOf(saved.all())
         private set
+
+    /** Kept in memory only, and reset whenever the app comes back to the front. */
+    var whenChoice: WhenChoice by mutableStateOf(WhenChoice.Now)
+
+    /** The moment the schedule screens should show. My Routes ignores this and always shows [now]. */
+    val viewTime: LocalDateTime get() = (whenChoice as? WhenChoice.At)?.time ?: now
 
     private fun currentMinute() = clock.now().truncatedTo(ChronoUnit.MINUTES)
 

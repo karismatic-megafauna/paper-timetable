@@ -81,7 +81,8 @@ fun ScreenFrame(title: String, trailing: @Composable () -> Unit = {}, content: @
             Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(horizontal = Ink.Gutter),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            InkText(title, Ink.Title, Modifier.weight(1f), maxLines = 1)
+            if (title.length <= 16) InkText(title, Ink.Title, Modifier.weight(1f), maxLines = 1)
+            else InkText(title, Ink.Row, Modifier.weight(1f).padding(vertical = 4.dp), maxLines = 2)
             trailing()
         }
         Rule()
