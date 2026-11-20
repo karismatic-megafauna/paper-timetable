@@ -43,9 +43,14 @@ cp /tmp/mini/mini.pack ../app/src/test/resources/mini.pack
 
 ## Install on a Kompakt
 
-1. On the phone, enable developer options and USB debugging.
-2. Connect it by USB and accept the prompt on the phone. `adb devices` should list it.
-3. `adb install app-debug.apk`
+1. Download `paper-timetable-<version>.apk` from the
+   [latest release](https://github.com/karismatic-megafauna/paper-timetable/releases/latest).
+2. On the phone, enable developer options and USB debugging.
+3. Connect it by USB and accept the prompt on the phone. `adb devices` should list it.
+4. `adb install paper-timetable-<version>.apk`
+
+The app shows as **Timetable**. Later versions install over it the same way
+and keep your saved routes.
 
 ## Build from source
 
