@@ -11,10 +11,10 @@ import inktransit.app.pack.PackStore
 import inktransit.app.ui.AppState
 import inktransit.app.ui.EInkTheme
 import inktransit.app.ui.Screen
-import inktransit.app.ui.ScreenFrame
 import inktransit.app.ui.screens.DirectionStopsScreen
 import inktransit.app.ui.screens.LineOverviewScreen
 import inktransit.app.ui.screens.LinesScreen
+import inktransit.app.ui.screens.AboutScreen
 import inktransit.app.ui.screens.MyRoutesScreen
 import inktransit.app.ui.screens.NearMeScreen
 import inktransit.app.ui.screens.SearchScreen
@@ -55,7 +55,7 @@ class MainActivity : ComponentActivity() {
                     Screen.WhenPicker -> WhenPickerScreen(app)
                     Screen.Search -> SearchScreen(app)
                     Screen.NearMe -> NearMeScreen(app)
-                    else -> ScreenFrame(screen.toString()) {}
+                    Screen.About -> AboutScreen(app)
                 }
             }
         }
