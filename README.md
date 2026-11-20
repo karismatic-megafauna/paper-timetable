@@ -1,6 +1,7 @@
-# Transit schedules for the Mudita Kompakt
+# Paper Timetable
 
-> Working name: `kompakt-transit`. The project does not have a real name yet.
+Transit schedules and headways for the Mudita Kompakt, offline. A paper
+timetable, not a live tracker: it shows what the agency has published.
 
 A small Android app that shows public-transit schedules on an E Ink phone,
 offline. It starts with LA Metro (bus and rail) and is built so other
@@ -29,7 +30,7 @@ docs/        The design and the build plan.
 
 The pack is the contract between the two halves. Its schema is in
 `converter/src/packbuilder/writer.py`; the app reads it in
-`app/src/main/java/inktransit/app/pack/`. A small fixture pack built from
+`app/src/main/java/io/github/karismatic_megafauna/papertimetable/pack/`. A small fixture pack built from
 hand-made feeds (`converter/tests/fixtures/`) is checked in at
 `app/src/test/resources/mini.pack` and both test suites use it. If you change
 the fixture or the schema, rebuild it:
@@ -104,3 +105,8 @@ one or more GTFS feeds, each with a short prefix. The regexes there handle
 feeds that keep line names and destinations in unusual places. Build it with
 `packbuilder build --config agencies/<id>.toml --out dist`. Choosing an agency
 inside the app is not built yet; today the app uses the one pack it bundles.
+
+## Licence
+
+GPL-3.0. See [LICENSE](LICENSE). Schedule data belongs to the
+agencies that publish it and is used under their terms.

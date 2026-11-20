@@ -6,11 +6,11 @@ plugins {
 
 // Placeholder identifier: the project has no name yet. Changing applicationId
 // later forces everyone to reinstall, so settle it before sharing a build.
-val appId = "inktransit.app"
+val appId = "io.github.karismatic_megafauna.papertimetable"
 val bundledPack = "lametro.pack"
 
 android {
-    namespace = "inktransit.app"
+    namespace = "io.github.karismatic_megafauna.papertimetable"
     compileSdk = 36
 
     defaultConfig {

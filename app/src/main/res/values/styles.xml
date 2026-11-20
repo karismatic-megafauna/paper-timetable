@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Transit</string>
+    <string name="app_name">Timetable</string>
 
     <!-- White, no action bar, and no window animation: E Ink smears motion. -->
     <style name="EInk" parent="android:Theme.Material.Light.NoActionBar">

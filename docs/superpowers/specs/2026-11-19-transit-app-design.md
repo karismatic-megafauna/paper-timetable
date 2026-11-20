@@ -2,7 +2,7 @@
 
 Date: 2026-11-19
 Status: draft, awaiting approval
-Working name: `kompakt-transit` (placeholder; the project has no name yet)
+Name: Paper Timetable (first built under the working name `kompakt-transit`)
 
 ## Intent
 
@@ -324,10 +324,9 @@ agency is a new config.
 
 ## Open, for the owner
 
-- **Name.** Needed before anyone else installs it: the app's internal
-  identifier is derived from it and changing that later forces a reinstall.
-  Not needed to start building. A name without "Mudita" or "Kompakt" in it is
-  safer for a community app.
-- **Licence**, before the repository is made public.
+- **Name: settled.** Paper Timetable ("Timetable" under the icon), repository
+  `paper-timetable`, app identifier
+  `io.github.karismatic_megafauna.papertimetable`.
+- **Licence: settled.** GPL-3.0.
 - **Becoming "official".** How apps get into Mudita's InkApps collection has
   not been looked into.

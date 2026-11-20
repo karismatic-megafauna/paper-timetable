@@ -12,5 +12,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "kompakt-transit"
+rootProject.name = "paper-timetable"
 include(":app")
