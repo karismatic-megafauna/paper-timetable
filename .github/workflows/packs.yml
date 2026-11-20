@@ -1,0 +1,43 @@
+# Rebuilds the schedule packs every week and publishes them as files on the
+# "packs" release, where the app's "Update schedule" button looks.
+#
+# LA Metro only publishes rail schedules about two weeks ahead, so a pack goes
+# stale quickly: this job is what keeps installed apps current.
+name: packs
+
+on:
+  schedule:
+    - cron: "0 11 * * 1" # Mondays, 3 am Pacific
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: packs
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: converter
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Test the converter
+        run: uv run pytest -q
+      - name: Build the LA Metro pack
+        run: uv run packbuilder build --config agencies/lametro.toml --out dist
+      - name: Check the pack against the live feeds
+        run: uv run pytest -q -m network
+      # Nothing above uploads anything, so a failed build leaves last week's pack in place.
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view packs >/dev/null 2>&1 || gh release create packs \
+            --title "Schedule packs" \
+            --notes "Rebuilt weekly. The app downloads index.json and the pack it lists; these files are replaced in place."
+          gh release upload packs dist/lametro.pack.gz dist/index.json --clobber
