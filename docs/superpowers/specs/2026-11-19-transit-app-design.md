@@ -30,11 +30,9 @@ are described here only so the first does not block them.
    self-updating view.
 3. **Other agencies.** A setup step that downloads a data pack per agency.
 
-4. **Route planning.** "How do I get from here to there?" across lines, worked
-   out on the phone from the same offline schedule. Raised by the owner as
-   worth looking into; what it should do is not yet discussed.
-
-Later, unscheduled: search by place or address.
+Later, unscheduled: search by place or address. Finding a route from A to B is
+not planned; the owner wants riders to understand the system well enough to
+choose for themselves (see "Understanding a line" below).
 
 ## Goals (project 1)
 
@@ -43,6 +41,8 @@ Later, unscheduled: search by place or address.
   "near me", or by stop name.
 - Show everything that leaves from a stop, for transfer decisions.
 - Work with no connection. A connection is needed only to update schedules.
+- Help a rider plan ahead without a route-finder: show how often each line
+  runs, and show schedules for another day or time.
 - Read comfortably on a 4.3" 800×480 E Ink screen.
 - Be built so adding agencies later is a setup screen, not a rewrite.
 
@@ -121,9 +121,57 @@ stop, with the next three departures as clock times.
 
 **Lines → Direction → Stops.** The way to add a route, matching the owner's
 mental model. Lines list shows rail first, then buses in number order, with a
-field to jump to a line number. Picking a line shows its two directions by
-destination. Picking a direction shows that direction's stops in travel
-order. Picking a stop opens the stop view.
+field to jump to a line number. Picking a line opens its overview, which
+offers its two directions by destination. Picking a direction shows that
+direction's stops in travel order. Picking a stop opens the stop view.
+
+**Understanding a line.** The owner's point: knowing "the D Line comes every
+few minutes" versus "the 617 comes once an hour" lets someone with a limited
+phone use the system intentionally — which lines you can just walk up to, and
+which you must time.
+
+- The Lines list carries a short frequency tag per line, for the current kind
+  of day (weekday, Saturday or Sunday).
+- The line overview gives, for each kind of day, the first and last trip and
+  how often it runs in each part of the day.
+
+```
+ LINES                    Weekday
+ ─────────────────────────────────────
+ B     every 10–15 min
+ D     every 5–10 min
+ ...
+ 617   about hourly
+```
+
+```
+ D LINE
+ ─────────────────────────────────────
+ WEEKDAYS          4:30a – 12:40a
+   Morning rush    every 5 min
+   Midday          every 10 min
+   Evening rush    every 5 min
+   Night           every 20 min
+ SATURDAY  ·  SUNDAY
+ ─────────────────────────────────────
+ → Union Station    → Wilshire/Western
+```
+
+(Figures in these sketches are illustrative, not Metro's.)
+
+- *Author's calls:* frequencies are worked out by the converter from the real
+  schedule and stored in the pack, measured at each direction's busiest stop.
+  Parts of the day are fixed bands (early morning, morning rush, midday,
+  evening rush, evening, night). Wording is rounded and plain: "every 5 min",
+  "every 10–15 min", "about hourly", "6 trips a day"; a band with no service
+  says so. If the two directions differ noticeably, each is shown.
+
+**Another day or time.** Stop view and the full-day departures screen have a
+"When" control: now (the default), or a chosen day and time. Days are offered
+as Today, Tomorrow, the next weekday/Saturday/Sunday, or a specific date, so
+holiday schedules come out right. Chosen with large buttons, not spinning
+wheels. A chosen time is clearly labelled on screen and resets to "now" when
+the app is reopened. My Routes always shows now.
 
 **Stop view.** Every line and direction serving the stop, with the next
 departures for each. Each row can be saved to My Routes.
@@ -211,8 +259,8 @@ feeds are merged into one pack, since the rider sees one system.
 It holds: agency name and time zone; validity dates and build date; a format
 version; lines (short name, long name, rail or bus, display order); each
 line's directions and destinations; stops (name, position, station grouping);
-each direction's ordered stop list; departures; and the service calendar with
-exceptions. It also has a reserved place for the agency's live-data address,
+each direction's ordered stop list; departures; the service calendar with
+exceptions; and each line's frequency summary per kind of day. It also has a reserved place for the agency's live-data address,
 empty for now, for project 2.
 
 - The app refuses a pack whose format version it does not understand, and
@@ -236,9 +284,6 @@ agency is a new config.
   LA is written into the app.
 - The app's storage can hold more than one pack, though project 1 uses one.
 - Saved routes record which agency they belong to.
-- For project 4: the pack keeps every trip's full stop sequence and times
-  (compacted, not summarised per stop), and the places grouping doubles as the
-  transfer points, so a planner can be added without changing the pack format.
 - For project 2: the owner has an earlier experiment (`~/Code/lametro-eink`)
   that reads LA Metro rail predictions from the Swiftly service with a
   personal key. An app others install cannot ship a personal key; how live
@@ -261,7 +306,9 @@ agency is a new config.
   stations and intersections (places); plus a run against the real LA Metro files with spot checks
   against Metro's published timetables for the D Line and line 720.
 - App: automated tests for "next departures" across the service-day boundary,
-  the end of service, and an expired pack.
+  the end of service, a chosen future day including a holiday, and an expired
+  pack. Converter tests cover the frequency summary, including an hourly line
+  and a line with a handful of trips a day.
 - On the device: the owner has the only Kompakt, connected by USB to the
   machine the build runs on. Builds are installed over ADB and layout is
   checked from device screenshots; legibility, ghosting, tap accuracy and
