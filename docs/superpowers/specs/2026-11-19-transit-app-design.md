@@ -30,6 +30,10 @@ are described here only so the first does not block them.
    self-updating view.
 3. **Other agencies.** A setup step that downloads a data pack per agency.
 
+4. **Route planning.** "How do I get from here to there?" across lines, worked
+   out on the phone from the same offline schedule. Raised by the owner as
+   worth looking into; what it should do is not yet discussed.
+
 Later, unscheduled: search by place or address.
 
 ## Goals (project 1)
@@ -194,10 +198,10 @@ was built, and an "Update schedule" action.
 - **In project 1:** the app-side fetch, compare and download, and the
   converter writing the pack plus its index entry. Both are tested end to end
   against a local address.
-- **Depends on the owner's hosting answer (see Open):** a scheduled job that
-  rebuilds the pack weekly and publishes it. If hosting is settled before the
-  build, the job is part of project 1; if not, it is added when it is, and
-  until then the bundled pack is refreshed by installing a new build.
+- **Also in project 1:** a scheduled job that rebuilds the pack weekly and
+  publishes it. The owner chose a public GitHub repository; packs and the
+  index are published as that repository's release files. The repository is
+  created once the project has a name.
 
 ## The data pack
 
@@ -232,6 +236,9 @@ agency is a new config.
   LA is written into the app.
 - The app's storage can hold more than one pack, though project 1 uses one.
 - Saved routes record which agency they belong to.
+- For project 4: the pack keeps every trip's full stop sequence and times
+  (compacted, not summarised per stop), and the places grouping doubles as the
+  transfer points, so a planner can be added without changing the pack format.
 - For project 2: the owner has an earlier experiment (`~/Code/lametro-eink`)
   that reads LA Metro rail predictions from the Swiftly service with a
   personal key. An app others install cannot ship a personal key; how live
@@ -268,6 +275,6 @@ agency is a new config.
   identifier is derived from it and changing that later forces a reinstall.
   Not needed to start building. A name without "Mudita" or "Kompakt" in it is
   safer for a community app.
-- **Where the project is hosted and its licence**, before sharing.
+- **Licence**, before the repository is made public.
 - **Becoming "official".** How apps get into Mudita's InkApps collection has
   not been looked into.
