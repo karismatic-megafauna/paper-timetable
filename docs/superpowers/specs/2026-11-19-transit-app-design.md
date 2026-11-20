@@ -72,6 +72,12 @@ These would make it a failure even if it works:
   lines; rail is refreshed often, bus at service changes a few times a year.
 - **Location:** Android's built-in location service only (no Google fused
   location).
+- **Rail is only published two weeks ahead** (found when planning, 2026-11-19).
+  Metro's rail file covers about a fortnight and is refreshed nightly; the bus
+  file covers the whole service period. So the pack's "valid through" date is
+  the rail one, the weekly rebuild matters, and a rail time for a date further
+  out is the same weekday's schedule carried forward, shown with a plain
+  "Beyond published schedule — times may change" line.
 
 ## Approaches
 
