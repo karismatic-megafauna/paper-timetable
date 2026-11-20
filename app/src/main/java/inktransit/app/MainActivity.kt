@@ -1,8 +1,8 @@
 package inktransit.app
 
-import inktransit.app.ui.crumbLabels
-import inktransit.app.ui.crumbText
-import inktransit.app.ui.LocalCrumb
+import inktransit.app.ui.backLabel
+import inktransit.app.ui.LocalBack
+import inktransit.app.ui.Back
 import androidx.compose.runtime.CompositionLocalProvider
 import android.os.Bundle
 import android.os.Handler
@@ -49,7 +49,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             EInkTheme {
                 BackHandler(enabled = app.nav.canPop) { app.nav.pop() }
-                CompositionLocalProvider(LocalCrumb provides crumbText(crumbLabels(app.db, app.nav.trail))) {
+                CompositionLocalProvider(LocalBack provides backLabel(app.db, app.nav.trail)?.let { Back(it) { app.nav.pop() } }) {
                 when (val screen = app.nav.top) {
                     Screen.MyRoutes -> MyRoutesScreen(app)
                     Screen.Lines -> LinesScreen(app)

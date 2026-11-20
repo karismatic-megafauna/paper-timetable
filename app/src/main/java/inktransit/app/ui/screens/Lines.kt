@@ -19,6 +19,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -67,16 +71,18 @@ fun InkField(value: String, hint: String, modifier: Modifier = Modifier, onChang
     Box(modifier.border(2.dp, Ink.Black).padding(horizontal = 10.dp, vertical = 12.dp)) {
         if (value.isEmpty()) InkText(hint, Ink.Small, maxLines = 1)
         var focused by remember { mutableStateOf(false) }
+        // Where the typed text ends, taken from the text's own layout so the bar sits right against the last letter.
+        var caret by remember { mutableStateOf(Rect.Zero) }
         BasicTextField(
-            value, onChange, Modifier.fillMaxWidth().onFocusChanged { focused = it.isFocused },
-            textStyle = Ink.Row, singleLine = true, cursorBrush = STILL_CURSOR,
-            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters, autoCorrectEnabled = false, imeAction = ImeAction.Done),
-            decorationBox = { text ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.width(IntrinsicSize.Min)) { text() }
-                    if (focused && value.isNotEmpty()) Box(Modifier.padding(start = 2.dp).width(2.dp).height(24.dp).background(Ink.Black))
-                }
+            value, onChange,
+            Modifier.fillMaxWidth().onFocusChanged { focused = it.isFocused }.drawWithContent {
+                drawContent()
+                if (focused && value.isNotEmpty()) drawRect(Ink.Black, Offset(caret.left + 1.dp.toPx(), caret.top), Size(2.dp.toPx(), caret.height))
             },
+            textStyle = Ink.Row, singleLine = true, cursorBrush = STILL_CURSOR,
+            // Capitals are the rider's choice: matching ignores case, and a forced caps mode cannot be switched off.
+            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None, autoCorrectEnabled = false, imeAction = ImeAction.Done),
+            onTextLayout = { caret = it.getCursorRect(it.layoutInput.text.length) },
         )
     }
 }

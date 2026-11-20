@@ -77,7 +77,12 @@ fun Rule() {
 @Composable
 fun ScreenFrame(title: String, trailing: @Composable () -> Unit = {}, content: @Composable ColumnScope.() -> Unit) {
     Column(Modifier.fillMaxSize()) {
-        LocalCrumb.current?.let { InkText(it, Ink.Small, Modifier.fillMaxWidth().padding(start = Ink.Gutter, end = Ink.Gutter, top = 6.dp), maxLines = 1) }
+        LocalBack.current?.let { back ->
+            Box(
+                Modifier.fillMaxWidth().height(48.dp).border(2.dp, Ink.Black).tap(onClick = back.go).padding(horizontal = Ink.Gutter),
+                contentAlignment = Alignment.CenterStart,
+            ) { InkText(back.label, Ink.Row, maxLines = 1) }
+        }
         androidx.compose.foundation.layout.Row(
             Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(horizontal = Ink.Gutter),
             verticalAlignment = Alignment.CenterVertically,

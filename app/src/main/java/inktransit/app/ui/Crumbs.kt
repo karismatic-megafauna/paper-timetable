@@ -6,11 +6,14 @@ import inktransit.app.pack.directions
 import inktransit.app.pack.place
 import inktransit.app.pack.routeById
 
+/** The back button a screen shows above its title: where it leads, and how to go there. */
+class Back(val label: String, val go: () -> Unit)
+
 /**
- * The app has no back button of its own; the phone's back key steps out. So
- * every screen says where it sits: one small line naming the screens behind it.
+ * A plain "Back" says nothing about where you are, so the button names the
+ * screen it returns to. The phone's back key does the same thing.
  */
-val LocalCrumb = compositionLocalOf<String?> { null }
+val LocalBack = compositionLocalOf<Back?> { null }
 
 private fun PackDb.lineLabel(routeId: Int): String {
     val route = routeById(routeId) ?: return "Line"
@@ -21,7 +24,7 @@ private fun label(db: PackDb, screen: Screen): String = when (screen) {
     Screen.MyRoutes -> "Home"
     Screen.Lines -> "Lines"
     is Screen.LineOverview -> db.lineLabel(screen.routeId)
-    is Screen.DirectionStops -> "→ " + db.directions(screen.routeId).firstOrNull { it.dir == screen.dir }?.headsign.orEmpty()
+    is Screen.DirectionStops -> "${db.routeById(screen.routeId)?.shortName.orEmpty()} → ${db.directions(screen.routeId).firstOrNull { it.dir == screen.dir }?.headsign.orEmpty()}"
     is Screen.StopView -> db.place(screen.placeId).name
     is Screen.DayTimes -> "Times"
     Screen.WhenPicker -> "When"
@@ -33,12 +36,5 @@ private fun label(db: PackDb, screen: Screen): String = when (screen) {
 /** A name for each screen behind the one on show, oldest first. Empty on the home screen. */
 fun crumbLabels(db: PackDb, trail: List<Screen>): List<String> = trail.dropLast(1).map { label(db, it) }
 
-/** The trail as one line. When it is too long the oldest steps go first; the nearest one always stays. */
-fun crumbText(labels: List<String>, maxChars: Int = 38): String? {
-    if (labels.isEmpty()) return null
-    val full = labels.joinToString(" › ")
-    if (full.length <= maxChars) return full
-    var kept = labels.drop(1)
-    while (kept.size > 1 && ("… › " + kept.joinToString(" › ")).length > maxChars) kept = kept.drop(1)
-    return "… › " + kept.joinToString(" › ")
-}
+/** What the back button says: the screen it returns to. Null on the home screen, which has none. */
+fun backLabel(db: PackDb, trail: List<Screen>): String? = crumbLabels(db, trail).lastOrNull()?.let { "‹ $it" }

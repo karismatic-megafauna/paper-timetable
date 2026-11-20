@@ -31,9 +31,9 @@ class ContextTest {
         nav.push(Screen.DirectionStops(d.id, 0))
         nav.push(Screen.StopView(alpha.placeId, alpha.id))
         nav.push(Screen.DayTimes(alpha.id, d.id, 0))
-        assertEquals(listOf("Home", "Lines", "D Line", "→ Gamma Station", "Alpha Station"), crumbLabels(db, nav.trail))
+        assertEquals(listOf("Home", "Lines", "D Line", "D → Gamma Station", "Alpha Station"), crumbLabels(db, nav.trail))
         nav.pop()
-        assertEquals(listOf("Home", "Lines", "D Line", "→ Gamma Station"), crumbLabels(db, nav.trail))
+        assertEquals(listOf("Home", "Lines", "D Line", "D → Gamma Station"), crumbLabels(db, nav.trail))
     }
 
     @Test fun busLinesAreNamedByNumberInTheTrail() {
@@ -41,13 +41,15 @@ class ContextTest {
         assertEquals(listOf("Home", "Near me", "Line 720"), crumbLabels(db, nav.trail))
     }
 
-    @Test fun trailTextKeepsTheNearestStepsWhenItIsTooLong() {
-        assertNull(crumbText(emptyList()))
-        assertEquals("Home", crumbText(listOf("Home")))
-        assertEquals("Home › Lines › D Line", crumbText(listOf("Home", "Lines", "D Line"), 30))
-        assertEquals("… › D Line › → Gamma Station", crumbText(listOf("Home", "Lines", "D Line", "→ Gamma Station"), 30))
-        // One step that is too long on its own is left for the screen to cut off.
-        assertEquals("… › A very long station name indeed", crumbText(listOf("Home", "A very long station name indeed"), 10))
+    @Test fun backButtonNamesTheScreenItGoesTo() {
+        val d = db.route("D")!!
+        val nav = Nav()
+        assertNull(backLabel(db, nav.trail)) // home: nowhere to go back to
+        nav.push(Screen.Lines)
+        assertEquals("‹ Home", backLabel(db, nav.trail))
+        nav.push(Screen.LineOverview(d.id))
+        nav.push(Screen.DirectionStops(d.id, 0))
+        assertEquals("‹ D Line", backLabel(db, nav.trail))
     }
 
     @Test fun placesListTheLinesThatCanBeBoardedThere() {
