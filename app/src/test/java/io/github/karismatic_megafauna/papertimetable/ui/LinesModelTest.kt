@@ -6,6 +6,7 @@ import io.github.karismatic_megafauna.papertimetable.pack.route
 import io.github.karismatic_megafauna.papertimetable.pack.routes
 import io.github.karismatic_megafauna.papertimetable.ui.screens.bandLines
 import io.github.karismatic_megafauna.papertimetable.ui.screens.filterLines
+import io.github.karismatic_megafauna.papertimetable.ui.screens.fitLineName
 import io.github.karismatic_megafauna.papertimetable.ui.screens.overview
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -25,6 +26,24 @@ class LinesModelTest {
     private val R720 = db.route("720")!!.id
 
     @After fun close() = db.close()
+
+    @Test fun shortNamesAreShownAsTheyAre() {
+        assertEquals("720", fitLineName("720", 30))
+        assertEquals("Dodger Stadium Express", fitLineName("Dodger Stadium Express", 30))
+    }
+
+    @Test fun longNamesKeepBothEndsSoLookAlikesDiffer() {
+        assertEquals("LAX / Met… Intuit Dome Express", fitLineName("LAX / Metro Transit Center -  Intuit Dome Express", 30))
+        assertEquals("LAX / Me… SoFi Stadium Express", fitLineName("LAX / Metro Transit Center -  SoFi Stadium Express", 30))
+    }
+
+    @Test fun aNameThatIsOneLongWordIsCutByLetters() {
+        assertEquals("Abcd…vwxyz", fitLineName("Abcdefghijklmnopqrstuvwxyz", 10))
+    }
+
+    @Test fun doubledSpacesAreClosedUp() {
+        assertEquals("Hawthorne - Dome", fitLineName("Hawthorne -  Dome", 30))
+    }
 
     @Test fun filter() {
         assertEquals(listOf("617"), filterLines(routes, "6").map { it.shortName })

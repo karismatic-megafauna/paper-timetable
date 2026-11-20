@@ -6,7 +6,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -28,6 +30,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
@@ -53,6 +56,28 @@ fun filterLines(routes: List<RouteRow>, typed: String): List<RouteRow> {
     if (t.isEmpty()) return routes
     val (starts, rest) = routes.partition { it.shortName.startsWith(t, ignoreCase = true) }
     return starts + rest.filter { it.shortName.contains(t, ignoreCase = true) }
+}
+
+/**
+ * A line name cut to [max] characters from the middle, keeping whole words at
+ * the end. Shuttle lines are named for both ends ("LAX / Metro Transit Center -
+ * SoFi Stadium Express"), and cut at the end several of them read the same.
+ */
+fun fitLineName(name: String, max: Int): String {
+    val tidy = name.trim().replace(Regex("\\s+"), " ")
+    if (tidy.length <= max) return tidy
+    // As many closing words as fit in two thirds of the space; the start gets what is left.
+    var tail = ""
+    for (word in tidy.split(' ').asReversed()) {
+        val longer = if (tail.isEmpty()) word else "$word $tail"
+        if (longer.length > max * 2 / 3) break
+        tail = longer
+    }
+    if (tail.isEmpty()) { // one very long word: cut by letters
+        val head = (max - 1) / 2
+        return tidy.take(head) + "…" + tidy.takeLast(max - 1 - head)
+    }
+    return tidy.take(max - 2 - tail.length).trimEnd() + "… " + tail
 }
 
 /** Rail or bus lines while the box is empty; once something is typed, matches from both. */
@@ -108,12 +133,19 @@ fun LinesScreen(app: AppState) {
             linesShown(routes, typed, app.linesRail), rowDp = 56f, modifier = Modifier.weight(1f), resetKey = typed to app.linesRail,
             empty = { InkText("No line called “$typed”.", Ink.Row, Modifier.padding(Ink.Gutter, 20.dp)) },
         ) { route ->
-            Row(
-                Modifier.fillMaxWidth().tap { app.nav.push(Screen.LineOverview(route.id)) }.padding(horizontal = Ink.Gutter),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                InkText(route.shortName, Ink.Row, Modifier.width(if (route.shortName.length > 4) 150.dp else 64.dp), maxLines = 1)
-                InkText(tags[route.id] ?: "no service", Ink.Small, maxLines = 1)
+            val tag = tags[route.id] ?: "no service"
+            val open = Modifier.fillMaxWidth().tap { app.nav.push(Screen.LineOverview(route.id)) }.padding(horizontal = Ink.Gutter)
+            if (route.shortName.length > 7) {
+                // A name too long to sit beside its frequency gets the full width, with the frequency under it.
+                Column(open, verticalArrangement = Arrangement.Center) {
+                    InkText(fitLineName(route.shortName, 34), Ink.Small, maxLines = 1)
+                    InkText(tag, Ink.Small.copy(fontWeight = FontWeight.Normal), maxLines = 1)
+                }
+            } else {
+                Row(open, verticalAlignment = Alignment.CenterVertically) {
+                    InkText(route.shortName, Ink.Row, Modifier.width(if (route.shortName.length > 4) 150.dp else 64.dp), maxLines = 1)
+                    InkText(tag, Ink.Small, maxLines = 1)
+                }
             }
         }
     }

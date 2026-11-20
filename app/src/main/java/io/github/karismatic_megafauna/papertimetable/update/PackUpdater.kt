@@ -39,6 +39,8 @@ class PackUpdater(
     private val baseUrl: String,
     private val store: PackStore,
     private val workDir: File,
+    /** A pack is a few megabytes. Anything that unpacks far beyond that is not one, and is not allowed to fill the phone. */
+    private val maxUnpackedBytes: Long = 256L * 1024 * 1024,
     private val open: (URL) -> InputStream = { url ->
         url.openConnection().apply { connectTimeout = 15_000; readTimeout = 30_000 }.getInputStream()
     },
@@ -118,6 +120,7 @@ class PackUpdater(
     private fun fetch(info: UpdateInfo, target: File, progress: (Int) -> Unit) {
         val digest = MessageDigest.getInstance("SHA-256")
         var compressed = 0L
+        var unpacked = 0L
         var reported = -1
         val counting = object : java.io.FilterInputStream(open(info.url)) {
             override fun read(): Int = super.read().also { if (it >= 0) compressed++ }
@@ -136,6 +139,9 @@ class PackUpdater(
                 while (true) {
                     val n = unzipped.read(buffer)
                     if (n < 0) break
+                    unpacked += n
+                    // The index says how long the download is; a longer one is not the file it describes.
+                    if (compressed > info.size || unpacked > maxUnpackedBytes) throw Damaged()
                     digest.update(buffer, 0, n)
                     try {
                         file.write(buffer, 0, n)

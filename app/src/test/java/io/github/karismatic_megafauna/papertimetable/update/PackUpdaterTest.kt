@@ -36,7 +36,7 @@ class PackUpdaterTest {
     private val requested = ArrayList<String>()
     private var failAfterBytes = -1
 
-    private fun updater(work: File = workDir) = PackUpdater("https://example.invalid/packs/", store, work) { url: URL ->
+    private fun updater(work: File = workDir, maxUnpacked: Long = Long.MAX_VALUE) = PackUpdater("https://example.invalid/packs/", store, work, maxUnpacked) { url: URL ->
         val name = url.path.substringAfterLast('/')
         requested.add(name)
         val bytes = served[name] ?: throw IOException("404 $name")
@@ -67,11 +67,11 @@ class PackUpdaterTest {
     private fun sha(bytes: ByteArray) = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
 
     /** Publishes [raw] as the agency's pack, with an index entry that can be bent for a test. */
-    private fun publish(raw: ByteArray, builtAt: Instant, indexVersion: Int = 1, sha: String = sha(raw), gz: ByteArray = gzip(raw)) {
+    private fun publish(raw: ByteArray, builtAt: Instant, indexVersion: Int = 1, sha: String = sha(raw), gz: ByteArray = gzip(raw), size: Int = gz.size) {
         served["mini.pack.gz"] = gz
         val entry = JSONObject().put("agency_id", "mini").put("name", "Mini Transit").put("format_version", indexVersion)
             .put("built_at", builtAt.toString()).put("valid_from", 20261102).put("valid_to", 20261231)
-            .put("url", "mini.pack.gz").put("size", gz.size).put("sha256", sha)
+            .put("url", "mini.pack.gz").put("size", size).put("sha256", sha)
         served["index.json"] = JSONObject().put("format", 1).put("packs", JSONArray().put(entry)).toString().toByteArray()
     }
 
@@ -172,6 +172,19 @@ class PackUpdaterTest {
     @Test fun aBrokenIndexIsAFailureNotACrash() {
         served["index.json"] = "<html>Not Found</html>".toByteArray()
         assertEquals(UpdateResult.Failed("Download didn't complete. Try again."), updater().update {})
+        assertUntouched()
+    }
+
+    @Test fun aDownloadLongerThanTheIndexSaysIsStopped() {
+        val raw = pack(newer)
+        publish(raw, newer, size = gzip(raw).size - 100)
+        assertEquals(UpdateResult.Failed("The downloaded schedule was damaged. Try again."), updater().update {})
+        assertUntouched()
+    }
+
+    @Test fun aPackThatUnpacksBeyondTheLimitIsStopped() {
+        publish(pack(newer), newer)
+        assertEquals(UpdateResult.Failed("The downloaded schedule was damaged. Try again."), updater(maxUnpacked = 1000).update {})
         assertUntouched()
     }
 }

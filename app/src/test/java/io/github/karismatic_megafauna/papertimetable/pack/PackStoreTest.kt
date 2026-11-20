@@ -83,4 +83,22 @@ class PackStoreTest {
         assertEquals(original, s.current().meta.builtAt)
         assertEquals(1, s.current().routes().size.coerceAtMost(1)) // still open and readable
     }
+
+    @Test fun needsInstallOnlyUntilTheBundledPackHasBeenLookedAt() {
+        assertTrue(store().needsInstall())
+        store().current().close()
+        assertEquals(false, store().needsInstall())
+        assertTrue("a new app build looks again", store("v2").needsInstall())
+    }
+
+    @Test fun aFailedCopyAfterAnUpgradeKeepsTheInstalledPack() {
+        val original = store("v1").current().also { it.close() }.meta.builtAt
+        val broken = PackStore(dir, "v2") { throw java.io.IOException("disk full") }
+        assertEquals(original, broken.current().also { it.close() }.meta.builtAt)
+        assertTrue("the bundled pack is tried again next launch", PackStore(dir, "v2") { bundled.inputStream() }.needsInstall())
+    }
+
+    @Test fun aFailedCopyOnFirstLaunchStillFails() {
+        assertThrows(java.io.IOException::class.java) { PackStore(dir, "v1") { throw java.io.IOException("disk full") }.current() }
+    }
 }

@@ -1,6 +1,7 @@
 package io.github.karismatic_megafauna.papertimetable.pack
 
 import java.io.File
+import java.io.IOException
 import java.io.InputStream
 
 /**
@@ -16,23 +17,41 @@ class PackStore(private val dir: File, private val bundledStamp: String, private
     private val currentFile get() = File(dir, "current")
     private val stampFile get() = File(dir, "bundled.stamp")
 
+    private fun installedFile(): File? =
+        currentFile.takeIf { it.exists() }?.readText()?.trim()?.let { File(dir, "$it.pack") }?.takeIf { it.exists() }
+
+    private fun stampChanged() = !stampFile.exists() || stampFile.readText() != bundledStamp
+
+    /**
+     * True when the next [current] has to copy the bundled pack out of the app
+     * (first launch, or the first launch of a new build). That takes a moment,
+     * so the caller can do it off the main thread.
+     */
+    @Synchronized
+    fun needsInstall(): Boolean = open == null && (installedFile() == null || stampChanged())
+
     @Synchronized
     fun current(): PackDb {
         open?.let { return it }
         dir.mkdirs()
-        var installed = currentFile.takeIf { it.exists() }?.readText()?.trim()?.let { File(dir, "$it.pack") }?.takeIf { it.exists() }
-        val stampChanged = !stampFile.exists() || stampFile.readText() != bundledStamp
-        if (installed == null || stampChanged) {
+        var installed = installedFile()
+        if (installed == null || stampChanged()) {
             val candidate = File(dir, "bundled.tmp")
-            bundled().use { input -> candidate.outputStream().use { input.copyTo(it) } }
-            val shipped = PackDb.open(candidate).use { it.meta }
-            val existing = installed?.let { runCatching { PackDb.open(it).use { db -> db.meta } }.getOrNull() }
-            if (existing == null || existing.agencyId != shipped.agencyId || shipped.builtAt.isAfter(existing.builtAt)) {
-                installed = install(candidate, shipped.agencyId)
-            } else {
+            try {
+                bundled().use { input -> candidate.outputStream().use { input.copyTo(it) } }
+                val shipped = PackDb.open(candidate).use { it.meta }
+                val existing = installed?.let { runCatching { PackDb.open(it).use { db -> db.meta } }.getOrNull() }
+                if (existing == null || existing.agencyId != shipped.agencyId || shipped.builtAt.isAfter(existing.builtAt)) {
+                    installed = install(candidate, shipped.agencyId)
+                }
+                stampFile.writeText(bundledStamp)
+            } catch (e: IOException) {
+                // No room to look at the bundled pack (a full phone after an upgrade, say). The pack
+                // already installed still works; the stamp is left alone so the next launch tries again.
+                if (installed == null) throw e
+            } finally {
                 candidate.delete()
             }
-            stampFile.writeText(bundledStamp)
         }
         return PackDb.open(installed!!).also { open = it }
     }

@@ -5,6 +5,15 @@ import io.github.karismatic_megafauna.papertimetable.ui.LocalBack
 import io.github.karismatic_megafauna.papertimetable.ui.Back
 import androidx.compose.runtime.CompositionLocalProvider
 import android.os.Bundle
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import io.github.karismatic_megafauna.papertimetable.ui.InkText
+import kotlin.concurrent.thread
 import android.os.Handler
 import android.os.Looper
 import androidx.activity.ComponentActivity
@@ -29,14 +38,15 @@ import io.github.karismatic_megafauna.papertimetable.ui.WhenChoice
 import java.io.File
 
 class MainActivity : ComponentActivity() {
-    private lateinit var app: AppState
+    // Null only while the bundled schedule is being copied out on first launch.
+    private var loaded: AppState? by mutableStateOf(null)
     private val handler = Handler(Looper.getMainLooper())
 
     // While the app is on screen, wake at the top of each minute. Screens only
     // redraw if what they show actually changed (a departure passed).
     private val minuteTick = object : Runnable {
         override fun run() {
-            app.tick()
+            loaded?.tick()
             handler.postDelayed(this, 60_000 - System.currentTimeMillis() % 60_000 + 50)
         }
     }
@@ -45,9 +55,18 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val info = packageManager.getPackageInfo(packageName, 0)
         val store = PackStore(File(filesDir, "packs"), "${info.longVersionCode}-${info.lastUpdateTime}") { assets.open(BuildConfig.BUNDLED_PACK) }
-        app = AppState(store, SavedRoutes(File(filesDir, "saved.json")))
+        val saved = SavedRoutes(File(filesDir, "saved.json"))
+        // Copying the schedule out of the app takes a moment, so that one launch does it off the
+        // main thread. Every other launch opens straight onto My Routes with no extra redraw.
+        if (store.needsInstall()) thread { AppState(store, saved).let { runOnUiThread { loaded = it } } }
+        else loaded = AppState(store, saved)
         setContent {
             EInkTheme {
+                val app = loaded
+                if (app == null) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { InkText("Preparing schedule…") }
+                    return@EInkTheme
+                }
                 BackHandler(enabled = app.nav.canPop) { app.nav.pop() }
                 CompositionLocalProvider(LocalBack provides backLabel(app.db, app.nav.trail)?.let { Back(it) { app.nav.pop() } }) {
                 when (val screen = app.nav.top) {
@@ -70,7 +89,7 @@ class MainActivity : ComponentActivity() {
     // Coming back to the app always shows the present; a chosen time is for one look ahead.
     override fun onRestart() {
         super.onRestart()
-        app.whenChoice = WhenChoice.Now
+        loaded?.whenChoice = WhenChoice.Now
     }
 
     override fun onResume() {
