@@ -66,3 +66,23 @@ def test_deterministic_ids():
     random.Random(7).shuffle(shuffled)
     assert build_places(shuffled, used, 100, 250) == a
     assert [p.id for p in a] == list(range(1, len(a) + 1))
+
+
+def m(metres):
+    return metres / 111_320
+
+
+def test_same_intersection_names_merge_across_a_wide_junction():
+    # Seen at Wilshire/Vermont: the station point sits east of the junction and the
+    # 'Vermont / Wilshire' poles are ~180 m from it. Same streets, so same place.
+    stops = [Stop("plat", "Wilshire / Vermont Station", 34.0, -118.0, 0, "st"),
+             Stop("st", "Wilshire / Vermont Station", 34.0, -118.0, 1, None),
+             Stop("v1", "Vermont / Wilshire", 34.0 + m(180), -118.0, 0, None),
+             Stop("x1", "Wilshire / Shatto", 34.0 - m(180), -118.0, 0, None)]
+    places = build_places(stops, {"plat", "v1", "x1"}, 100, 250)
+    assert sorted(sorted(p.stop_ids) for p in places) == [["plat", "v1"], ["x1"]]
+
+
+def test_same_name_far_apart_stays_separate():
+    stops = [Stop("a", "Main / 1st", 34.0, -118.0, 0, None), Stop("b", "1st / Main", 34.0 + m(400), -118.0, 0, None)]
+    assert len(build_places(stops, {"a", "b"}, 100, 250)) == 2

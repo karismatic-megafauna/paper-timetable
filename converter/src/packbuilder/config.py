@@ -21,6 +21,8 @@ class AgencyConfig:
     headsign_strip_regex: str = ""
     place_radius_m: float = 100
     place_max_span_m: float = 250
+    place_same_name_radius_m: float = 250
+    place_same_name_span_m: float = 400
     realtime_url: str = ""
 
 

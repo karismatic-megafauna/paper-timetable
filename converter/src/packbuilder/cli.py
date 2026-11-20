@@ -22,7 +22,8 @@ def build(config: Path, out: Path, built_at: datetime) -> str:
     lines = patterns.build(feeds, cfg)
     stops = {sid: s for f in feeds for sid, s in f.stops.items()}
     used = {s for p in lines.patterns for s in p.stop_ids}
-    place_list = places.build_places(list(stops.values()), used, cfg.place_radius_m, cfg.place_max_span_m)
+    place_list = places.build_places(list(stops.values()), used, cfg.place_radius_m, cfg.place_max_span_m,
+                                     cfg.place_same_name_radius_m, cfg.place_same_name_span_m)
     freq, spans = frequency.summarize(lines, sd)
 
     # Everything above can fail on bad data; nothing is written until it has all succeeded.

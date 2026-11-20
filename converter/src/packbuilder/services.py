@@ -34,11 +34,21 @@ def _feed_days(feed: Feed) -> dict[date, set[str]]:
                 if row.weekdays[d.weekday()]:
                     days[d].add(row.service_id)
                 d += timedelta(days=1)
+        # When calendar.txt exists it defines the feed's range. Exceptions outside
+        # it are ignored: LA Metro lists stray holiday dates months past the end.
+        bounded = bool(days)
+        if not bounded and feed.calendar_dates:
+            d, end = (f(to_date(ex.date) for ex in feed.calendar_dates) for f in (min, max))
+            while d <= end:
+                days[d] = set()
+                d += timedelta(days=1)
         for ex in feed.calendar_dates:
             d = to_date(ex.date)
+            if d not in days:
+                continue
             if ex.added:
-                days.setdefault(d, set()).add(ex.service_id)
-            elif d in days:
+                days[d].add(ex.service_id)
+            else:
                 days[d].discard(ex.service_id)
     except ValueError as e:
         raise GtfsError(f"{feed.prefix}: calendar has an impossible date ({e})") from None
