@@ -4,8 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
-// Placeholder identifier: the project has no name yet. Changing applicationId
-// later forces everyone to reinstall, so settle it before sharing a build.
+// Changing applicationId forces everyone to reinstall, so it stays as it is.
 val appId = "io.github.karismatic_megafauna.papertimetable"
 val bundledPack = "lametro.pack"
 
@@ -21,6 +20,22 @@ android {
         versionName = "0.1.0"
         buildConfigField("String", "PACK_BASE_URL", "\"${providers.gradleProperty("packBaseUrl").getOrElse("")}\"")
         buildConfigField("String", "BUNDLED_PACK", "\"$bundledPack\"")
+    }
+    // Release builds are signed with the project's key when this machine has it
+    // (set in ~/.gradle/gradle.properties, never in the repository). Without it
+    // the release build still works but comes out unsigned. See README, "Releases".
+    val storeFile = providers.gradleProperty("paperTimetableStoreFile").orNull
+    val storePassword = providers.gradleProperty("paperTimetableStorePassword").orNull
+    if (storeFile != null && storePassword != null) {
+        signingConfigs.create("release") {
+            this.storeFile = file(storeFile)
+            this.storePassword = storePassword
+            keyAlias = providers.gradleProperty("paperTimetableKeyAlias").getOrElse("paper-timetable")
+            keyPassword = storePassword
+        }
+    }
+    buildTypes {
+        release { signingConfig = signingConfigs.findByName("release") }
     }
     buildFeatures {
         compose = true
@@ -59,4 +74,4 @@ val copyPack by tasks.registering(Copy::class) {
 }
 tasks.matching { it.name.startsWith("merge") && it.name.endsWith("Assets") && !it.name.contains("UnitTest") }
     .configureEach { dependsOn(copyPack) }
-tasks.matching { it.name.startsWith("lint") && it.name.contains("Analyze") }.configureEach { dependsOn(copyPack) }
+tasks.matching { it.name.contains("lint", ignoreCase = true) }.configureEach { dependsOn(copyPack) }

@@ -74,6 +74,33 @@ cd converter && uv run packbuilder build --config agencies/lametro.toml --out di
 ./test.sh
 ```
 
+## Releases
+
+`./gradlew :app:assembleRelease` writes `app/build/outputs/apk/release/`.
+
+Builds published by this project are signed with its release key. An APK that
+claims to be Paper Timetable should show this certificate (check with
+`apksigner verify --print-certs`):
+
+```
+CN=Paper Timetable, O=karismatic-megafauna
+SHA-256 7b9a36b6e051ec46de64e69d3d5b496319f67c46568d694c9e2b6b067569d895
+```
+
+The key is not in this repository. The build signs a release only when these
+are set in `~/.gradle/gradle.properties` on the machine doing the build:
+
+```
+paperTimetableStoreFile=/path/to/release.jks
+paperTimetableStorePassword=…
+paperTimetableKeyAlias=paper-timetable
+```
+
+Without them the release build still works and comes out unsigned; sign it
+with a key of your own to install it. Android only lets an app be updated by
+a build signed with the same key, so a phone moves between debug builds,
+your own builds and the project's builds by uninstalling first.
+
 ## Schedule updates
 
 `.github/workflows/packs.yml` rebuilds the pack every Monday and uploads it,

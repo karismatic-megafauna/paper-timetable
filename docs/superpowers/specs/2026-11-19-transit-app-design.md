@@ -1,7 +1,8 @@
 # Minimal transit schedules for the Mudita Kompakt — design
 
 Date: 2026-11-19
-Status: draft, awaiting approval
+Status: approved and built. Revised 2026-11-20 after the first pass on the
+device; the screens below describe the app as it now is.
 Name: Paper Timetable (first built under the working name `kompakt-transit`)
 
 ## Intent
@@ -66,7 +67,11 @@ These would make it a failure even if it works:
 
 - **Device:** Mudita Kompakt. 4.3" E Ink, 800×480, MuditaOS K (Android 12),
   quad-core MediaTek MT6761, 3 GB RAM, 32 GB storage. No Google services.
-- **Install:** sideloaded APK (ADB today).
+- **Screen measure:** the Kompakt reports a density of 213, so the screen is
+  about 360 × 601 dp, not the 320 × 533 dp first assumed. Layouts are sized
+  from the space they are given, never from a fixed row count.
+- **Install:** sideloaded APK (ADB today). Builds meant for other people are
+  signed with the project's release key (see "Releases").
 - **Data source:** LA Metro publishes bus and rail schedules as two separate
   GTFS zip files (gitlab.com/LACMTA/gtfs_bus and gtfs_rail). Roughly 110+ bus
   lines; rail is refreshed often, bus at service changes a few times a year.
@@ -110,24 +115,36 @@ the CPU, is the slow part, and Android's interface toolkit is Kotlin.
 stop, with the next three departures as clock times.
 
 ```
- MY ROUTES                      + Add
+ MY ROUTES              │ Edit │ About
  ─────────────────────────────────────
  D  → Union Station
     Wilshire/Western    4:12 4:24 4:36
-
+ ─────────────────────────────────────
  720 → Santa Monica
     Wilshire/Western    4:09 4:17 4:25
  ─────────────────────────────────────
- Lines        Near me        Search
+ Lines      │   Near me   │    Search
 ```
 
 - Tapping a route opens its stop view.
-- Routes can be removed and reordered.
-- Empty state explains how to add the first route.
+- Edit switches the cards to remove and reorder; it is offered only when
+  there is a route to edit.
+- There is no "Add" button. A route is added by finding its stop and tapping
+  the star; the empty state says so.
+
+**Finding your way around.** Added after the device pass: with only the
+phone's own back gesture, it was easy to lose track of where a screen sat.
+
+- Every screen but home has a row at the top that goes back and names where
+  back leads: "‹ Home", "‹ Lines", "‹ D Line", "‹ D → Union Station",
+  "‹ Wilshire / Vermont". A breadcrumb trail was tried first and was too
+  small to read.
+- The phone's back gesture does the same thing.
 
 **Lines → Direction → Stops.** The way to add a route, matching the owner's
-mental model. Lines list shows rail first, then buses in number order, with a
-field to jump to a line number. Picking a line opens its overview, which
+mental model. The Lines list is split into **Rail** and **Bus**, chosen with
+two buttons under a field for typing a line; typing searches both at once.
+The list comes back on the half that was open. Picking a line opens its overview, which
 offers its two directions by destination. Picking a direction shows that
 direction's stops in travel order. Picking a stop opens the stop view.
 
@@ -138,11 +155,19 @@ which you must time.
 
 - The Lines list carries a short frequency tag per line, for the current kind
   of day (weekday, Saturday or Sunday).
+- A few event shuttles have names far too long for a row ("LAX / Metro
+  Transit Center - SoFi Stadium Express"). Those take the full width with the
+  frequency beneath, and are cut from the middle so both ends can be read.
 - The line overview gives, for each kind of day, the first and last trip and
   how often it runs in each part of the day.
 
 ```
+ ‹ Home
+ ─────────────────────────────────────
  LINES                    Weekday
+ [ Type a line: 720, D …             ]
+ ─────────────────────────────────────
+ █████ Rail █████  │       Bus
  ─────────────────────────────────────
  B     every 10–15 min
  D     every 5–10 min
@@ -177,10 +202,11 @@ which you must time.
 as Today, Tomorrow, the next weekday/Saturday/Sunday, or a specific date, so
 holiday schedules come out right. Chosen with large buttons, not spinning
 wheels. A chosen time is clearly labelled on screen and resets to "now" when
-the app is reopened. My Routes always shows now.
+the app is reopened. My Routes always shows now. The control is a full-width
+row under the screen title that reads "When: Now" or the chosen day and time.
 
 **Stop view.** Every line and direction serving the stop, with the next
-departures for each. Each row can be saved to My Routes.
+departures for each. Each row can be saved to My Routes with its star.
 
 ```
  WILSHIRE / VERMONT
@@ -193,7 +219,9 @@ departures for each. Each row can be saved to My Routes.
 ```
 
 - Tapping a row opens the full day's departures for that line, direction and
-  stop, paged.
+  stop, as a paged grid of times opening on the page that holds the next one.
+  That screen has the star too, in its title bar, so a route can be saved
+  from wherever the rider ends up.
 - *Author's call — places, not poles:* schedule data lists each platform and
   each street corner as its own stop. The app works in **places**: a station's
   platforms plus every stop within about 100 m of it or of each other (so all
@@ -205,12 +233,15 @@ departures for each. Each row can be saved to My Routes.
 - A saved route still records the exact stop it boards at, so its times are
   for that pole or platform.
 
-**Near me.** On tap, gets one location fix and lists the closest stops with
-distance. Location permission is requested the first time this is tapped, not
+**Near me.** On tap, gets one location fix and lists the closest places with
+distance and, under each name, the lines that can be boarded there — what
+serves a stop matters more than what it is called. Location permission is requested the first time this is tapped, not
 at install. Shows a plain "Finding location…" while waiting, uses the last
 known location if a fix takes too long, and says so.
 
-**Search.** Stop-name search with the on-screen keyboard.
+**Search.** Stop-name search with the on-screen keyboard. The keyboard is
+left in whatever case the rider sets (matching ignores case), and each result
+lists its lines as Near me does.
 
 **About / schedule.** Agency name, the dates the schedule is valid for, when it
 was built, and an "Update schedule" action.
@@ -236,6 +267,17 @@ was built, and an "Update schedule" action.
 - The screen redraws only on a tap, on returning to the app, and when a shown
   departure passes (at most once a minute, and only while visible).
 - Large tap targets with clear separation; touch feedback lags on this screen.
+- Buttons are not boxed. Set side by side or stacked, boxes double every line
+  and looked untidy on the device. A bar of buttons is ruled off with one
+  horizontal line and divided by vertical lines that run the bar's full
+  height; the chosen one of a pair is shown white on black. Only a button
+  standing alone has an outline.
+- A full page of a list ends flush against Prev/Next. Rows stretch to fill
+  the height, so a gap at the bottom only ever means "this is the last page".
+- The text cursor does not blink (each blink would be a refresh); a still bar
+  is drawn against the last letter typed.
+- A change of system settings (text size, language) redraws in place and
+  keeps the rider on the page they were reading.
 - Follows Mudita's own app conventions where they can be observed on the
   device.
 
@@ -247,15 +289,29 @@ was built, and an "Update schedule" action.
   "Schedule may be out of date" line.
 - "Update schedule" fetches a small index file, compares it to the installed
   pack, and downloads a newer pack if there is one. It never runs on its own.
+- A download is checked against the index: it is stopped if it runs longer
+  than the index says or unpacks far beyond the size of any real pack, and is
+  only installed once its checksum matches and it opens. Whatever goes wrong,
+  the installed schedule is left as it was.
 - *Author's call:* packs and the index are plain static files at a base
   address set in one place in the app, so hosting can move.
 - **In project 1:** the app-side fetch, compare and download, and the
   converter writing the pack plus its index entry. Both are tested end to end
   against a local address.
 - **Also in project 1:** a scheduled job that rebuilds the pack weekly and
-  publishes it. The owner chose a public GitHub repository; packs and the
-  index are published as that repository's release files. The repository is
-  created once the project has a name.
+  publishes it. Packs and the index are published as the release files of
+  the public repository, `github.com/karismatic-megafauna/paper-timetable`,
+  under the release named `packs`.
+
+### Releases
+
+Builds handed to other people are signed with one release key, created
+2026-11-20. Android accepts an update only from the key that signed the
+installed app, so the key is kept for the life of the project: it lives on
+the owner's machine outside the repository, its password in the owner's
+Gradle settings, and its certificate fingerprint is printed in the README so
+anyone can check a build. Someone building from source gets an unsigned
+release build and signs it themselves.
 
 ## The data pack
 
@@ -320,7 +376,7 @@ agency is a new config.
   checked from device screenshots; legibility, ghosting, tap accuracy and
   location-fix time need the owner's eyes, so the plan has owner checkpoints
   on the device early (first screen) and not only at the end. An 800×480
-  emulator is used in between.
+  emulator set to the Kompakt's density of 213 is used in between.
 
 ## Open, for the owner
 
