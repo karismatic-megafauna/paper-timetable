@@ -12,6 +12,9 @@ import inktransit.app.ui.AppState
 import inktransit.app.ui.EInkTheme
 import inktransit.app.ui.Screen
 import inktransit.app.ui.ScreenFrame
+import inktransit.app.ui.screens.DirectionStopsScreen
+import inktransit.app.ui.screens.LineOverviewScreen
+import inktransit.app.ui.screens.LinesScreen
 import inktransit.app.ui.screens.MyRoutesScreen
 import java.io.File
 
@@ -38,6 +41,9 @@ class MainActivity : ComponentActivity() {
                 BackHandler(enabled = app.nav.canPop) { app.nav.pop() }
                 when (val screen = app.nav.top) {
                     Screen.MyRoutes -> MyRoutesScreen(app)
+                    Screen.Lines -> LinesScreen(app)
+                    is Screen.LineOverview -> LineOverviewScreen(app, screen.routeId)
+                    is Screen.DirectionStops -> DirectionStopsScreen(app, screen.routeId, screen.dir)
                     else -> ScreenFrame(screen.toString()) {}
                 }
             }
