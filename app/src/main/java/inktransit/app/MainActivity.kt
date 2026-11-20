@@ -16,6 +16,8 @@ import inktransit.app.ui.screens.DirectionStopsScreen
 import inktransit.app.ui.screens.LineOverviewScreen
 import inktransit.app.ui.screens.LinesScreen
 import inktransit.app.ui.screens.MyRoutesScreen
+import inktransit.app.ui.screens.NearMeScreen
+import inktransit.app.ui.screens.SearchScreen
 import inktransit.app.ui.screens.DayTimesScreen
 import inktransit.app.ui.screens.StopViewScreen
 import inktransit.app.ui.screens.WhenPickerScreen
@@ -51,6 +53,8 @@ class MainActivity : ComponentActivity() {
                     is Screen.StopView -> StopViewScreen(app, screen.placeId, screen.highlightStopId)
                     is Screen.DayTimes -> DayTimesScreen(app, screen.stopId, screen.routeId, screen.dir)
                     Screen.WhenPicker -> WhenPickerScreen(app)
+                    Screen.Search -> SearchScreen(app)
+                    Screen.NearMe -> NearMeScreen(app)
                     else -> ScreenFrame(screen.toString()) {}
                 }
             }

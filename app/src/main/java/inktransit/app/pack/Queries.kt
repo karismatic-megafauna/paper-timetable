@@ -211,3 +211,43 @@ fun PackDb.stopById(id: Int): StopRow? =
     sql.rawQuery("SELECT id, key, place_id, name FROM stop WHERE id = ?", arrayOf("$id")).use {
         if (it.moveToFirst()) StopRow(it.getInt(0), it.getString(1), it.getInt(2), it.getString(3)) else null
     }
+
+private fun metresBetween(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
+    val p1 = Math.toRadians(lat1)
+    val p2 = Math.toRadians(lat2)
+    val a = Math.pow(Math.sin((p2 - p1) / 2), 2.0) + Math.cos(p1) * Math.cos(p2) * Math.pow(Math.sin(Math.toRadians(lon2 - lon1) / 2), 2.0)
+    return 2 * 6_371_000 * Math.asin(Math.sqrt(a))
+}
+
+/**
+ * The [limit] closest places with their distance in metres. Searches a small
+ * box first and widens it; gives up beyond about 50 km, so someone far from
+ * the network gets an empty list instead of a meaningless one.
+ */
+fun PackDb.nearestPlaces(lat: Double, lon: Double, limit: Int): List<Pair<PlaceRow, Int>> {
+    var box = 0.01
+    var found: List<Pair<PlaceRow, Int>> = emptyList()
+    while (box <= 0.5) {
+        val args = arrayOf("${lat - box}", "${lat + box}", "${lon - box * 1.3}", "${lon + box * 1.3}")
+        found = sql.rawQuery("SELECT id, name, lat, lon FROM place WHERE lat BETWEEN ? AND ? AND lon BETWEEN ? AND ?", args).use { c ->
+            buildList {
+                while (c.moveToNext()) {
+                    val place = PlaceRow(c.getInt(0), c.getString(1), c.getDouble(2), c.getDouble(3))
+                    add(place to metresBetween(lat, lon, place.lat, place.lon).toInt())
+                }
+            }
+        }
+        if (found.size >= limit) break
+        box *= 2
+    }
+    return found.sortedBy { it.second }.take(limit)
+}
+
+/** "350 ft" / "0.4 mi" where people use miles, "120 m" / "1.2 km" elsewhere. Rounded: a GPS fix is not that exact. */
+fun formatDistance(m: Int, locale: java.util.Locale): String {
+    if (locale.country == "US") {
+        val feet = m * 3.28084
+        return if (feet < 1000) "${maxOf(50, Math.round(feet / 50).toInt() * 50)} ft" else String.format(java.util.Locale.ROOT, "%.1f mi", feet / 5280)
+    }
+    return if (m < 1000) "${maxOf(10, Math.round(m / 10.0).toInt() * 10)} m" else String.format(java.util.Locale.ROOT, "%.1f km", m / 1000.0)
+}
